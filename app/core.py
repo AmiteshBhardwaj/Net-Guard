@@ -24,6 +24,7 @@ class Flow:
     src: str
     dst: str
     dport: int
+    sport: int | None = None
     protocol: str = "TCP"
     started: float = field(default_factory=time.time)
     ended: float = field(default_factory=time.time)
@@ -65,7 +66,7 @@ class DecisionEngine:
         self.model = model
         self.threshold = threshold
         self.whitelist = whitelist if whitelist is not None else set()
-        self.source_activity: dict[str, deque[tuple[float, int, int, int]]] = defaultdict(deque)
+        self.source_activity: dict[str, deque[tuple[float, int, int, int, int]]] = defaultdict(deque)
         self.model_activity: dict[str, deque[tuple[float, str]]] = defaultdict(deque)
         self.cooldowns: dict[tuple[str, str], float] = {}
 
@@ -74,13 +75,14 @@ class DecisionEngine:
         if flow.src in self.whitelist:
             return None
         history = self.source_activity[flow.src]
-        history.append((now, flow.dport, flow.login_failures, flow.request_count))
+        history.append((now, flow.dport, flow.login_failures, flow.request_count, flow.forward_packets))
         while history and now - history[0][0] > 5:
             history.popleft()
 
         ports = {item[1] for item in history}
         login_count = sum(item[2] for item in history)
         requests = sum(item[3] for item in history)
+        forward_packets = sum(item[4] for item in history)
         label, probability, reasons = "Normal", 0.0, []
         if len(ports) >= 50 and len(history) >= 3:
             label, probability = "PortScan", 0.99
@@ -91,6 +93,9 @@ class DecisionEngine:
         elif requests >= 60 and sum(item[3] > 0 for item in history) >= 3:
             label, probability = "DoS/DDoS", 0.96
             reasons.append(f"{requests} requests sent in 5 seconds")
+        elif forward_packets >= 60 and len(history) >= 3:
+            label, probability = "DoS/DDoS", 0.96
+            reasons.append(f"{forward_packets} forward packets sent in 5 seconds")
         elif self.model is not None:
             try:
                 row = [flow.features()]

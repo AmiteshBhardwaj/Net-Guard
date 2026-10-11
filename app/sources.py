@@ -39,9 +39,9 @@ def flows_from_pcap(payload: bytes) -> list[Flow]:
             if flow is None or stamp - flow.ended > 2:
                 if flow is not None:
                     flows.append(flow)
-                flow = Flow(src=str(ip.src), dst=str(ip.dst), dport=dst_port, protocol=protocol, started=stamp, ended=stamp)
+                flow = Flow(src=str(ip.src), dst=str(ip.dst), dport=dst_port, sport=src_port, protocol=protocol, started=stamp, ended=stamp)
                 packet_flows[canonical] = flow
-            is_forward = (flow.src, flow.dport) == src_ep
+            is_forward = (flow.src, flow.sport) == src_ep
             length = int(len(packet))
             flow.ended = stamp
             if is_forward:
@@ -97,9 +97,9 @@ class CaptureSource:
                 if flow is None or stamp - flow.ended > 2:
                     if flow is not None:
                         completed.append(flow)
-                    flow = Flow(src=str(ip.src), dst=str(ip.dst), dport=int(transport.dport), protocol=protocol, started=stamp, ended=stamp)
+                    flow = Flow(src=str(ip.src), dst=str(ip.dst), dport=int(transport.dport), sport=int(transport.sport), protocol=protocol, started=stamp, ended=stamp)
                     active[key] = flow
-                forward = (flow.src, flow.dport) == src_ep
+                forward = (flow.src, flow.sport) == src_ep
                 length = int(len(packet))
                 flow.ended = stamp
                 if forward:

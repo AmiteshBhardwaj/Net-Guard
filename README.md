@@ -15,6 +15,17 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 
 On Linux/macOS, activate the environment with `source .venv/bin/activate`. Open [http://127.0.0.1:8000](http://127.0.0.1:8000).
 
+## Deploy on Render
+
+This repository includes `render.yaml` for a public Render Free web service.
+
+1. Push the repository to GitHub.
+2. In Render, choose **New +** > **Blueprint**, then select this repository.
+3. Review the detected `netguard` service and deploy it. Render installs `requirements.txt`, starts FastAPI with the platform-provided `PORT`, and checks `/api/health`.
+4. Open the generated `https://<service-name>.onrender.com` URL. Confirm `/api/health`, launch a simulated PortScan, and watch the dashboard alert feed.
+
+Free Render services spin down when idle and can take about a minute to wake. Their filesystem is ephemeral: SQLite alerts, blocks, and attack history reset after a restart or redeploy. This deployment supports dashboard simulation, PCAP replay, APIs, and WebSockets. Live Scapy capture still requires a local lab machine with packet-capture permissions and a supported driver.
+
 The default source is **Lab simulation**. The attack buttons generate bounded, labeled telemetry inside the app and send it through the same flow detector; they do not send packets or requests to the target. The target field accepts only loopback or RFC1918 IPv4 addresses. This source is always labeled as simulated in the dashboard.
 
 ## Traffic sources
@@ -27,7 +38,7 @@ If Scapy or the capture driver is unavailable, the dashboard and lab simulation 
 
 ## Optional Random Forest
 
-The app starts with explainable rules and says so in the model panel. Train and load a Random Forest using multiple CICIDS2017 per-capture CSV files:
+The app starts with explainable rules and says so in the model panel. Live capture and PCAP replay detect port scans and sustained forward-packet bursts; failed-login detection needs application-level telemetry. Train and load a Random Forest using multiple CICIDS2017 per-capture CSV files:
 
 ```powershell
 python scripts/train_model.py --data data/cicids
