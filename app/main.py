@@ -21,6 +21,12 @@ from pydantic import BaseModel, Field
 
 from app.core import DecisionEngine, Flow, env_whitelist, private_target
 from app.sources import CaptureSource, flows_from_pcap
+from app.threat_dashboard_api import (
+    init_db_tables,
+    router as threat_dashboard_router,
+    set_broadcaster,
+    set_db_provider,
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = Path(os.getenv("NETGUARD_DATA_DIR", ROOT / "data"))
@@ -73,6 +79,7 @@ def init_db() -> None:
         conn.execute("CREATE TABLE IF NOT EXISTS alerts (id TEXT PRIMARY KEY, ts REAL, src TEXT, dst TEXT, dport INTEGER, label TEXT, prob REAL, severity TEXT, reasons TEXT, blocked INTEGER, protocol TEXT)")
         conn.execute("CREATE TABLE IF NOT EXISTS attacks (id TEXT PRIMARY KEY, ts REAL, attack TEXT, status TEXT, detected INTEGER DEFAULT 0)")
         conn.execute("CREATE TABLE IF NOT EXISTS blocks (ip TEXT PRIMARY KEY, ts REAL)")
+        init_db_tables(conn)
 
 
 init_db()
@@ -93,6 +100,11 @@ async def broadcast(payload: dict[str, Any]) -> None:
                 dead.append(socket)
         for socket in dead:
             clients.discard(socket)
+
+
+set_broadcaster(broadcast)
+set_db_provider(db)
+app.include_router(threat_dashboard_router)
 
 
 def remember_packet(ts: float, count: int) -> None:
@@ -158,6 +170,11 @@ class WhitelistRequest(BaseModel):
 @app.get("/")
 async def dashboard() -> FileResponse:
     return FileResponse(ROOT / "static" / "index.html")
+
+
+@app.get("/threat-dashboard")
+async def threat_dashboard_page() -> FileResponse:
+    return FileResponse(ROOT / "static" / "threat_dashboard.html")
 
 
 @app.get("/api/health")
