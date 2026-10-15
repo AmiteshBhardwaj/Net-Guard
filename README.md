@@ -28,6 +28,10 @@ Free Render services spin down when idle and can take about a minute to wake. Th
 
 The default source is **Lab simulation**. The attack buttons generate bounded, labeled telemetry inside the app and send it through the same flow detector; they do not send packets or requests to the target. The target field accepts only loopback or RFC1918 IPv4 addresses. This source is always labeled as simulated in the dashboard.
 
+## Dashboard demo mode
+
+Open `/?mock=1` to run the dashboard's scripted UI without the backend. Use the sidebar to switch between Overview, Incident Lab, Threat Overview, Isolation Forest, Attack Lab, Demo Ingress, and Live Sniffer; each view also has a matching URL hash (for example `/?mock=1#incident-lab`). Use **Inject anomaly** or one of the simulated attack buttons to play the normal → detected → responding → contained sequence. In Attack Lab, **Reset mock lab** clears the scripted counters. Add `&state=normal`, `&state=elevated`, `&state=critical`, or `&state=contained` to preview a specific theme. Press **P** or use **Presenter** to toggle the large-screen layout. Mock telemetry is clearly marked and never makes API or WebSocket requests.
+
 ## Traffic sources
 
 - **Lab simulation:** safe, repeatable judge demo for normal activity, port scans, failed-login bursts, and request floods.

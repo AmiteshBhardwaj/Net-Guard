@@ -21,6 +21,9 @@ from pydantic import BaseModel, Field
 
 from app.core import DecisionEngine, Flow, env_whitelist, private_target
 from app.sources import CaptureSource, flows_from_pcap
+from backend.blast_radius.router import router as blast_router
+from backend.blast_radius.service import BlastService
+from backend.blast_radius.topology import ensure_blast_schema, seed_demo_topology
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = Path(os.getenv("NETGUARD_DATA_DIR", ROOT / "data"))
@@ -42,6 +45,7 @@ def load_model() -> Any:
 engine = DecisionEngine(load_model(), whitelist=env_whitelist())
 app = FastAPI(title="NetGuard", version="1.0.0")
 app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
+app.include_router(blast_router)
 capture = CaptureSource()
 clients: set[WebSocket] = set()
 client_lock = asyncio.Lock()
@@ -95,6 +99,9 @@ async def broadcast(payload: dict[str, Any]) -> None:
             clients.discard(socket)
 
 
+app.state.blast_service = BlastService(broadcast, db)
+
+
 def remember_packet(ts: float, count: int) -> None:
     with state_lock:
         second = int(ts)
@@ -140,6 +147,7 @@ def on_live_flow(flow: Flow) -> None:
 @app.on_event("startup")
 async def startup() -> None:
     app.state.loop = asyncio.get_running_loop()
+    app.state.blast_service = BlastService(broadcast, db)
 
 
 class AttackRequest(BaseModel):
