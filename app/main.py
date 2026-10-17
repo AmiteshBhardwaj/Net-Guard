@@ -25,6 +25,18 @@ from app.sources import CaptureSource, flows_from_pcap
 from backend.blast_radius.router import router as blast_router
 from backend.blast_radius.service import BlastService
 from backend.blast_radius.topology import ensure_blast_schema, seed_demo_topology
+from app.threat_dashboard_api import (
+    init_db_tables,
+    router as threat_dashboard_router,
+    set_broadcaster,
+    set_db_provider,
+)
+
+ROOT = Path(__file__).resolve().parent.parent
+DATA_DIR = Path(os.getenv("NETGUARD_DATA_DIR", ROOT / "data"))
+DB_PATH = DATA_DIR / "netguard.sqlite3"
+MODEL_PATH = ROOT / "models" / "netguard.joblib"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def load_model() -> Any:
@@ -72,6 +84,7 @@ def init_db() -> None:
         conn.execute("CREATE TABLE IF NOT EXISTS alerts (id TEXT PRIMARY KEY, ts REAL, src TEXT, dst TEXT, dport INTEGER, label TEXT, prob REAL, severity TEXT, reasons TEXT, blocked INTEGER, protocol TEXT)")
         conn.execute("CREATE TABLE IF NOT EXISTS attacks (id TEXT PRIMARY KEY, ts REAL, attack TEXT, status TEXT, detected INTEGER DEFAULT 0)")
         conn.execute("CREATE TABLE IF NOT EXISTS blocks (ip TEXT PRIMARY KEY, ts REAL)")
+        init_db_tables(conn)
 
 
 init_db()
@@ -95,6 +108,9 @@ async def broadcast(payload: dict[str, Any]) -> None:
 
 
 app.state.blast_service = BlastService(broadcast, db)
+set_broadcaster(broadcast)
+set_db_provider(db)
+app.include_router(threat_dashboard_router)
 
 
 def remember_packet(ts: float, count: int) -> None:
@@ -161,6 +177,11 @@ class WhitelistRequest(BaseModel):
 @app.get("/")
 async def dashboard() -> FileResponse:
     return FileResponse(ROOT / "static" / "index.html")
+
+
+@app.get("/threat-dashboard")
+async def threat_dashboard_page() -> FileResponse:
+    return FileResponse(ROOT / "static" / "threat_dashboard.html")
 
 
 @app.get("/api/health")

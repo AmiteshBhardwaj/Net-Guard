@@ -35,7 +35,7 @@
 
     <main class="main-content" id="overview">
       <header class="topbar">
-        <div class="breadcrumb"><span>Dashboards</span><span>/</span><strong id="breadcrumb-page">Overview</strong></div>
+        <div class="breadcrumb"><span>Dashboards</span> / <strong id="breadcrumb-page">Overview</strong></div>
         <div class="top-actions">
           <label class="search-box" for="dashboard-search"><span>⌕</span><input id="dashboard-search" type="search" placeholder="Search IP, port, or tactic"></label>
           <span class="live-indicator"><i></i><span id="connection-label">CONNECTING</span></span>
@@ -195,13 +195,81 @@
 
       <footer class="footer"><span><i></i> NETGUARD LOCAL MONITOR</span><span>DETECT <b>·</b> EXPLAIN <b>·</b> RESPOND</span><span>WebSocket <strong>live telemetry</strong></span></footer>
     </main>
-  </div>
 
-  <section class="incident-drawer" id="incident-drawer" aria-labelledby="drawer-title" aria-hidden="true">
-    <div class="drawer-backdrop" data-close-drawer></div>
-    <div class="drawer-content"><div class="drawer-grip"></div><div class="drawer-heading"><div><div class="eyebrow">INCIDENT RESPONSE</div><h2 id="drawer-title">Recommended Actions</h2></div><button class="icon-button" id="close-actions" aria-label="Close recommended actions">×</button></div><div class="drawer-meta"><span class="severity-badge" id="drawer-severity">HIGH</span><span>ASSET <strong id="drawer-asset">10.0.2.14 · monitored endpoint</strong></span><span class="mitre-chip" id="mitre-chip">MITRE ATT&amp;CK · T1046</span></div><p class="local-response-note">Block actions update NetGuard's simulated application blocklist only. No host firewall rules are changed.</p><ol class="recommend-steps" id="recommend-steps"></ol></div>
-  </section>
+    <!-- 3. RIGHT ACTIVITY & NOTIFICATION SIDEBAR (280px) -->
+    <aside class="snow-sidebar-right">
+      <!-- Section: Notifications (Live Threat Feed) -->
+      <div>
+        <div class="snow-right-section-title">Notifications</div>
+        <div class="snow-feed-list" id="snow-threat-feed">
+          <div class="snow-feed-item">
+            <div class="snow-feed-avatar">⚡</div>
+            <div class="snow-feed-content">
+              <div class="snow-feed-text">Autonomous block enacted for IP <strong>198.51.100.23</strong></div>
+              <div class="snow-feed-time">Just now</div>
+            </div>
+          </div>
+          <div class="snow-feed-item">
+            <div class="snow-feed-avatar" style="color:var(--snow-accent-cyan);">🛡️</div>
+            <div class="snow-feed-content">
+              <div class="snow-feed-text">Isolation Forest calibrated to baseline telemetry</div>
+              <div class="snow-feed-time">5m ago</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: Incident Activities -->
+      <div>
+        <div class="snow-right-section-title">Activities</div>
+        <div class="snow-feed-list" id="snow-activity-feed">
+          <div class="snow-feed-item">
+            <div class="snow-feed-avatar">●</div>
+            <div class="snow-feed-content">
+              <div class="snow-feed-text">FastAPI telemetry daemon initialized on port 8000</div>
+              <div class="snow-feed-time">System</div>
+            </div>
+          </div>
+          <div class="snow-feed-item">
+            <div class="snow-feed-avatar">●</div>
+            <div class="snow-feed-content">
+              <div class="snow-feed-text">SQLite persistence verified at <code>data/netguard.sqlite3</code></div>
+              <div class="snow-feed-time">System</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: Monitored Endpoints -->
+      <div>
+        <div class="snow-right-section-title">Monitored Endpoints</div>
+        <div class="snow-endpoint-list">
+          <div class="snow-endpoint-item">
+            <div class="snow-endpoint-meta">
+              <span class="snow-endpoint-title">Border Gateway</span>
+              <span class="snow-endpoint-ip">192.168.1.1</span>
+            </div>
+            <span class="snow-pulse-dot" title="Active"></span>
+          </div>
+          <div class="snow-endpoint-item">
+            <div class="snow-endpoint-meta">
+              <span class="snow-endpoint-title">DMZ Target Server</span>
+              <span class="snow-endpoint-ip">10.0.0.15</span>
+            </div>
+            <span class="snow-pulse-dot" style="background-color: var(--snow-accent-orange); box-shadow: 0 0 8px rgba(255,201,153,0.6);" title="Elevated Ingress"></span>
+          </div>
+          <div class="snow-endpoint-item">
+            <div class="snow-endpoint-meta">
+              <span class="snow-endpoint-title">Core Cluster Node</span>
+              <span class="snow-endpoint-ip">10.0.0.80</span>
+            </div>
+            <span class="snow-pulse-dot" title="Protected"></span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
   <div class="toast" id="toast" role="status"></div>
-  <script src="/static/dashboard.js"></script>
+  <script src="/static/app.js"></script>
 </body>
 </html>
