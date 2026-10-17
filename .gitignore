@@ -2,6 +2,7 @@ __pycache__/
 *.py[cod]
 .venv/
 venv/
+frontend/node_modules/
 .env
 data/*.db
 data/*.sqlite3
