@@ -3,24 +3,33 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#141414">
+  <meta name="theme-color" content="#e5e5dd">
   <title>NetGuard // Threat Defense & Detection Dashboard</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <script>
+    try {
+      if (localStorage.getItem('netguard-theme') === 'dark') {
+        document.documentElement.dataset.theme = 'dark';
+      }
+    } catch (_) {}
+  </script>
+  <link rel="stylesheet" href="/static/style.css?v=5">
+  <link rel="stylesheet" href="https://unpkg.com/lenis@1.3.27/dist/lenis.css">
 </head>
 <body>
+  <div class="page-scroll-progress" id="page-scroll-progress" aria-hidden="true"></div>
   <div class="snow-app-shell">
     <!-- 1. LEFT NAVIGATION SIDEBAR (220px) -->
-    <aside class="snow-sidebar-left">
+    <aside class="snow-sidebar-left" data-lenis-prevent>
       <a href="/" class="snow-brand-user">
         <div class="snow-avatar-badge">NG</div>
         <div class="snow-brand-name">NetGuard</div>
       </a>
 
       <!-- Navigation: Favorites -->
-      <div class="snow-nav-section-title">Favorites</div>
+      <div class="snow-nav-section-title">Workspace</div>
       <ul class="snow-nav-list">
         <li>
-          <a href="/" class="snow-nav-item active">
+          <a href="#overview" class="snow-nav-item active">
             <span class="snow-nav-icon">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
             </span>
@@ -32,20 +41,20 @@
             <span class="snow-nav-icon">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
             </span>
-            <span>Incident Lab</span>
+            <span>Activity log</span>
           </a>
         </li>
       </ul>
 
       <!-- Navigation: Dashboards -->
-      <div class="snow-nav-section-title">Dashboards</div>
+      <div class="snow-nav-section-title">Tools</div>
       <ul class="snow-nav-list">
         <li>
-          <a href="/" class="snow-nav-item active">
+          <a href="#simulations" class="snow-nav-item">
             <span class="snow-nav-icon">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
             </span>
-            <span>Threat Overview</span>
+            <span>Attack lab</span>
           </a>
         </li>
         <li>
@@ -53,28 +62,20 @@
             <span class="snow-nav-icon">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
             </span>
-            <span>Isolation Forest</span>
-          </a>
-        </li>
-        <li>
-          <a href="#simulations" class="snow-nav-item" id="nav-attack-lab">
-            <span class="snow-nav-icon">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="22" y1="12" x2="18" y2="12"></line><line x1="6" y1="12" x2="2" y2="12"></line><line x1="12" y1="6" x2="12" y2="2"></line><line x1="12" y1="22" x2="12" y2="18"></line></svg>
-            </span>
-            <span>Attack Lab</span>
+            <span>Detection method</span>
           </a>
         </li>
       </ul>
 
       <!-- Navigation: Traffic Sources -->
-      <div class="snow-nav-section-title">Traffic Sources</div>
+      <div class="snow-nav-section-title">Traffic source</div>
       <ul class="snow-nav-list">
         <li>
           <a href="#" class="snow-nav-item active" id="source-demo-toggle">
             <span class="snow-nav-icon">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
             </span>
-            <span>Demo Ingress</span>
+            <span>Lab simulation</span>
           </a>
         </li>
         <li>
@@ -82,7 +83,7 @@
             <span class="snow-nav-icon">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
             </span>
-            <span>Live Sniffer</span>
+            <span>Live capture</span>
           </a>
         </li>
       </ul>
@@ -90,7 +91,7 @@
       <!-- Footer Brand Signature -->
       <div class="snow-sidebar-footer">
         <div class="snowui-logo">
-          <span>snowUI</span> × NetGuard
+          <span class="snow-pulse-dot"></span>Local security lab
         </div>
       </div>
     </aside>
@@ -101,231 +102,208 @@
       <header class="snow-topbar">
         <div class="snow-topbar-left">
           <div class="snow-breadcrumb">
-            <span>Dashboards</span>
+            <span>NetGuard</span>
             <span>/</span>
-            <strong>Threat Overview</strong>
+            <strong>Threat overview</strong>
           </div>
           <div class="snow-search-bar">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <input type="text" id="snow-search-input" placeholder="Search IP, port, or tactic..." autocomplete="off">
-            <span class="snow-search-shortcut">⌘/</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="snow-search-input" placeholder="Search IP, port, or detection" autocomplete="off">
+            <kbd class="snow-search-shortcut">⌘/</kbd>
           </div>
         </div>
 
         <div class="snow-topbar-actions">
           <div class="snow-status-indicator">
             <span class="snow-pulse-dot" id="ws-pulse-dot"></span>
-            <span id="ws-status-text">Connected</span>
+            <span id="ws-status-text">Connecting</span>
           </div>
-          <button class="snow-btn primary" id="btn-toggle-stream">Start Stream</button>
+          <button class="snow-btn theme-toggle" id="btn-theme-toggle" type="button" aria-label="Switch to dark mode" aria-pressed="false">
+            <svg class="theme-icon theme-icon-moon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.9 13A8.5 8.5 0 0 1 11 3.1 8.5 8.5 0 1 0 20.9 13Z"></path></svg>
+            <svg class="theme-icon theme-icon-sun" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"></path></svg>
+            <span id="theme-toggle-label">Dark mode</span>
+          </button>
+          <button class="snow-btn primary" id="btn-toggle-stream">Start sample stream</button>
           <button class="snow-btn danger" id="btn-inject-anomaly">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-            Inject Anomaly
+            Inject test event
           </button>
           <button class="snow-btn" id="btn-export-csv">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            Export
+            Export alerts
           </button>
         </div>
       </header>
 
-      <!-- SECTION HEADER WITH TIMEFRAME & SIMULATION CHIPS -->
-      <div class="snow-section-header">
-        <div class="snow-timeframe-dropdown" id="timeframe-selector">
-          Today <span>⌄</span>
+      <div class="snow-section-header" id="overview">
+        <div class="snow-page-heading">
+          <div class="snow-page-eyebrow">NETGUARD / TRAFFIC DESK</div>
+          <h1>Threat overview</h1>
+          <p>Traffic, alerts, and detector health for this runtime.</p>
         </div>
-        <div class="snow-action-group">
-          <select class="snow-select" id="stream-speed-select" aria-label="Stream Speed">
-            <option value="0.5">Speed: 0.5s (Fast)</option>
-            <option value="1.0" selected>Speed: 1.0s (Normal)</option>
-            <option value="2.0">Speed: 2.0s (Relaxed)</option>
+        <div class="snow-action-group" id="simulations" aria-label="Safe lab simulations">
+          <span class="snow-action-caption">Run a lab simulation</span>
+          <select class="snow-select" id="stream-speed-select" aria-label="Sample interval">
+            <option value="0.5">0.5 second interval</option>
+            <option value="1.0" selected>1 second interval</option>
+            <option value="2.0">2 second interval</option>
           </select>
-          <button class="snow-btn" data-launch="portscan">Simulate PortScan</button>
-          <button class="snow-btn" data-launch="bruteforce">Simulate BruteForce</button>
-          <button class="snow-btn" data-launch="dos">Simulate DoS</button>
+          <button class="snow-btn" data-launch="portscan">Port scan</button>
+          <button class="snow-btn" data-launch="bruteforce">Brute force</button>
+          <button class="snow-btn" data-launch="dos">DoS burst</button>
         </div>
       </div>
 
-      <!-- 4 TOP SIGNATURE SNOW UI PASTEL KPI CARDS -->
+      <!-- Current runtime indicators -->
       <section class="snow-kpi-grid">
         <!-- Card 1: Ingress Flows -->
         <div class="snow-kpi-card blue">
-          <div class="snow-kpi-card-label">Ingress Flows</div>
+          <div class="snow-kpi-card-label">Flows processed</div>
           <div class="snow-kpi-card-row">
-            <div class="snow-kpi-card-value" id="kpi-flows">721K</div>
-            <div class="snow-kpi-badge">+11.01% ↗</div>
+            <div class="snow-kpi-card-value" id="kpi-flows">0</div>
+            <div class="snow-kpi-badge">Current runtime</div>
           </div>
         </div>
 
         <!-- Card 2: Threats Detected -->
         <div class="snow-kpi-card purple">
-          <div class="snow-kpi-card-label">Threats Detected</div>
+          <div class="snow-kpi-card-label">Alerts raised</div>
           <div class="snow-kpi-card-row">
-            <div class="snow-kpi-card-value" id="kpi-threats">13</div>
-            <div class="snow-kpi-badge">Critical / High</div>
+            <div class="snow-kpi-card-value" id="kpi-threats">0</div>
+            <div class="snow-kpi-badge">Saved alerts</div>
           </div>
         </div>
 
         <!-- Card 3: Ingress Blocks -->
         <div class="snow-kpi-card blue">
-          <div class="snow-kpi-card-label">Autonomous Blocks</div>
+          <div class="snow-kpi-card-label">IPs blocked</div>
           <div class="snow-kpi-card-row">
-            <div class="snow-kpi-card-value" id="kpi-blocks">8</div>
-            <div class="snow-kpi-badge">+4.1% ↗</div>
+            <div class="snow-kpi-card-value" id="kpi-blocks">0</div>
+            <div class="snow-kpi-badge">Application blocklist</div>
           </div>
         </div>
 
         <!-- Card 4: Detection Engine -->
-        <div class="snow-kpi-card purple">
-          <div class="snow-kpi-card-label">Detection Engine</div>
+        <div class="snow-kpi-card purple" id="model-details">
+          <div class="snow-kpi-card-label">Detection method</div>
           <div class="snow-kpi-card-row">
-            <div class="snow-kpi-card-value" style="font-size:22px;" id="kpi-engine">Isolation Forest</div>
-            <div class="snow-kpi-badge">99.2% Conf</div>
+            <div class="snow-kpi-card-value" id="kpi-engine">Rules only</div>
+            <div class="snow-kpi-badge" id="kpi-engine-badge">Current mode</div>
           </div>
         </div>
       </section>
 
-      <!-- MIDDLE ROW: DUAL-SPLINE CHART + THREATS BY TACTIC -->
+      <!-- Detector sample trend and the active flow checks -->
       <section class="snow-middle-grid">
-        <!-- Left: Total Ingress & Outlier Telemetry (Spline) -->
+        <!-- Left: detector sample size over time -->
         <div class="snow-card-container">
           <div class="snow-card-header">
             <div class="snow-card-title-group">
-              <h2 class="snow-card-title">Total Ingress & Outlier Telemetry</h2>
-              <div class="snow-card-nav">
-                <span class="active">Overview</span>
-                <span>Outlier Ratio</span>
-                <span>MITRE Vector</span>
-              </div>
+              <h2 class="snow-card-title">Packet size over sample stream</h2>
+              <div class="snow-card-nav"><span>Generated detector samples</span></div>
             </div>
             <div class="snow-chart-legend">
               <div class="snow-legend-item">
-                <span class="snow-legend-dot" style="background-color: var(--snow-accent-cyan);"></span>
-                <span>Current Ingress</span>
+                <span class="snow-legend-dot" style="background-color: var(--snow-accent-coral);"></span>
+                <span>Sample size</span>
               </div>
               <div class="snow-legend-item">
                 <span class="snow-legend-dot" style="background-color: var(--snow-accent-lavender);"></span>
-                <span>Baseline Normal</span>
+                <span>Baseline</span>
               </div>
             </div>
           </div>
           <div class="snow-spline-chart-wrap">
             <canvas id="snow-spline-chart"></canvas>
             <div class="snow-chart-tooltip" id="spline-tooltip"></div>
+            <div class="snow-chart-empty" id="chart-empty-state">Waiting for sample data</div>
           </div>
         </div>
 
-        <!-- Right: Threats by Attack Tactic (Progress Bars) -->
+        <!-- Right: supported detection rules -->
         <div class="snow-card-container">
           <div class="snow-card-header">
-            <h2 class="snow-card-title">Threats by Attack Tactic</h2>
-            <div class="snow-card-nav">
-              <span class="active">All Vectors</span>
-            </div>
+            <h2 class="snow-card-title">Detection rules</h2>
+            <div class="snow-card-nav"><span>Local flow checks</span></div>
           </div>
-          <div class="snow-progress-list" id="tactic-progress-list">
-            <div class="snow-progress-item">
-              <div class="snow-progress-name">PortScan (T1046)</div>
-              <div class="snow-progress-track">
-                <div class="snow-progress-fill" style="width: 58%; background-color: var(--snow-accent-purple);"></div>
-              </div>
-              <div class="snow-progress-val">58%</div>
+          <div class="snow-progress-list">
+            <div class="snow-rule-item">
+              <span class="snow-rule-marker"></span>
+              <div><div class="snow-rule-name">Port scan</div><span class="snow-rule-detail">50+ destination ports within 5 seconds</span></div>
             </div>
-            <div class="snow-progress-item">
-              <div class="snow-progress-name">BruteForce (T1110)</div>
-              <div class="snow-progress-track">
-                <div class="snow-progress-fill" style="width: 32%; background-color: var(--snow-accent-cyan);"></div>
-              </div>
-              <div class="snow-progress-val">32%</div>
+            <div class="snow-rule-item">
+              <span class="snow-rule-marker"></span>
+              <div><div class="snow-rule-name">Brute force</div><span class="snow-rule-detail">Repeated failed logins from one source</span></div>
             </div>
-            <div class="snow-progress-item">
-              <div class="snow-progress-name">DoS/DDoS (T1499)</div>
-              <div class="snow-progress-track">
-                <div class="snow-progress-fill" style="width: 24%; background-color: var(--snow-accent-coral);"></div>
-              </div>
-              <div class="snow-progress-val">24%</div>
+            <div class="snow-rule-item">
+              <span class="snow-rule-marker"></span>
+              <div><div class="snow-rule-name">Request burst</div><span class="snow-rule-detail">60+ requests within 5 seconds</span></div>
             </div>
-            <div class="snow-progress-item">
-              <div class="snow-progress-name">Anomalous Protocol</div>
-              <div class="snow-progress-track">
-                <div class="snow-progress-fill" style="width: 14%; background-color: var(--snow-accent-mint);"></div>
-              </div>
-              <div class="snow-progress-val">14%</div>
-            </div>
-            <div class="snow-progress-item">
-              <div class="snow-progress-name">Data Exfiltration</div>
-              <div class="snow-progress-track">
-                <div class="snow-progress-fill" style="width: 8%; background-color: var(--snow-accent-orange);"></div>
-              </div>
-              <div class="snow-progress-val">8%</div>
+            <div class="snow-rule-item">
+              <span class="snow-rule-marker"></span>
+              <div><div class="snow-rule-name">Packet burst</div><span class="snow-rule-detail">60+ forward packets within 5 seconds</span></div>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- LOWER ROW: TRAFFIC BY PROTOCOL (BAR) + SEVERITY BREAKDOWN (DONUT) -->
+      <!-- Protocol mix and severity counts from the detector stream -->
       <section class="snow-lower-grid">
-        <!-- Left: Traffic by Protocol Bar Chart -->
+        <!-- Left: protocol mix -->
         <div class="snow-card-container">
           <div class="snow-card-header">
-            <h2 class="snow-card-title">Traffic by Protocol</h2>
+            <h2 class="snow-card-title">Protocol mix</h2>
             <div class="snow-chart-legend">
               <div class="snow-legend-item">
-                <span class="snow-legend-dot" style="background-color: var(--snow-accent-mint);"></span>
-                <span>Normal</span>
-              </div>
-              <div class="snow-legend-item">
-                <span class="snow-legend-dot" style="background-color: var(--snow-accent-purple);"></span>
-                <span>Anomalous</span>
+                <span class="snow-legend-dot" style="background-color: var(--snow-accent-cyan);"></span>
+                <span>Detector samples</span>
               </div>
             </div>
           </div>
           <div class="snow-bar-chart-wrap">
             <canvas id="snow-bar-canvas"></canvas>
+            <div class="snow-chart-empty" id="protocol-empty-state">No protocol samples yet</div>
           </div>
         </div>
 
-        <!-- Right: Threat Severity Breakdown Donut Chart -->
+        <!-- Right: severity counts -->
         <div class="snow-card-container">
           <div class="snow-card-header">
-            <h2 class="snow-card-title">Threat Severity Breakdown</h2>
-            <div class="snow-card-nav">
-              <span class="active">Distribution</span>
-            </div>
+            <h2 class="snow-card-title">Severity counts</h2>
           </div>
           <div class="snow-donut-wrap">
             <div class="snow-donut-canvas-box">
               <canvas id="snow-donut-canvas" width="140" height="140"></canvas>
             </div>
             <div class="snow-donut-legend-list" id="donut-legend-list">
-              <div class="snow-donut-legend-row">
+              <button class="snow-donut-legend-row snow-donut-filter" type="button" data-severity-toggle="critical" aria-pressed="true" aria-label="Toggle critical samples">
                 <div class="snow-legend-item">
                   <span class="snow-legend-dot" style="background-color: var(--snow-accent-red);"></span>
                   <span>Critical</span>
                 </div>
-                <span class="font-mono text-muted" id="legend-count-critical">38.6%</span>
-              </div>
-              <div class="snow-donut-legend-row">
+                <span class="font-mono text-muted" id="legend-count-critical">0</span>
+              </button>
+              <button class="snow-donut-legend-row snow-donut-filter" type="button" data-severity-toggle="high" aria-pressed="true" aria-label="Toggle high severity samples">
                 <div class="snow-legend-item">
                   <span class="snow-legend-dot" style="background-color: var(--snow-accent-coral);"></span>
                   <span>High</span>
                 </div>
-                <span class="font-mono text-muted" id="legend-count-high">22.5%</span>
-              </div>
-              <div class="snow-donut-legend-row">
+                <span class="font-mono text-muted" id="legend-count-high">0</span>
+              </button>
+              <button class="snow-donut-legend-row snow-donut-filter" type="button" data-severity-toggle="medium" aria-pressed="true" aria-label="Toggle medium severity samples">
                 <div class="snow-legend-item">
                   <span class="snow-legend-dot" style="background-color: var(--snow-accent-orange);"></span>
                   <span>Medium</span>
                 </div>
-                <span class="font-mono text-muted" id="legend-count-medium">30.8%</span>
-              </div>
-              <div class="snow-donut-legend-row">
+                <span class="font-mono text-muted" id="legend-count-medium">0</span>
+              </button>
+              <button class="snow-donut-legend-row snow-donut-filter" type="button" data-severity-toggle="low" aria-pressed="true" aria-label="Toggle low severity samples">
                 <div class="snow-legend-item">
                   <span class="snow-legend-dot" style="background-color: var(--snow-accent-mint);"></span>
                   <span>Low</span>
                 </div>
-                <span class="font-mono text-muted" id="legend-count-low">8.1%</span>
-              </div>
+                <span class="font-mono text-muted" id="legend-count-low">0</span>
+              </button>
             </div>
           </div>
         </div>
@@ -334,7 +312,10 @@
       <!-- AUDIT TABLE: INCIDENT & TELEMETRY LOGS -->
       <section class="snow-table-card" id="audit-log">
         <div class="snow-table-toolbar">
-          <h2 class="snow-card-title">Incident & Telemetry Audit Log</h2>
+          <div>
+            <h2 class="snow-card-title">Alert log</h2>
+            <div class="snow-feed-time">Source events from the current runtime</div>
+          </div>
           <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
             <select class="snow-select" id="filter-severity" aria-label="Filter Severity">
               <option value="">All Severities</option>
@@ -350,11 +331,10 @@
               <option value="ICMP">ICMP</option>
             </select>
             <select class="snow-select" id="filter-anomaly" aria-label="Filter Anomaly">
-              <option value="">All Traffic</option>
-              <option value="1">Anomalies Only</option>
-              <option value="0">Normal Only</option>
+              <option value="">All alerts</option>
+              <option value="1">Blocked sources</option>
+              <option value="0">Unblocked sources</option>
             </select>
-            <button class="snow-btn" id="btn-clear-logs">Clear Logs</button>
           </div>
         </div>
 
@@ -364,18 +344,18 @@
               <tr>
                 <th>Timestamp</th>
                 <th>Source IP</th>
-                <th>Target IP</th>
-                <th>Port / Proto</th>
-                <th>Anomaly Score</th>
-                <th>MITRE Classification</th>
+                <th>Destination IP</th>
+                <th>Port / Protocol</th>
+                <th>Confidence</th>
+                <th>Detection</th>
                 <th>Severity</th>
-                <th>Status / Action</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody id="audit-table-body">
               <tr>
                 <td colspan="8" style="text-align:center; padding:30px; color:var(--snow-text-muted);">
-                  Loading telemetry audit records...
+                  Loading alerts...
                 </td>
               </tr>
             </tbody>
@@ -393,84 +373,54 @@
       </section>
     </main>
 
-    <!-- 3. RIGHT ACTIVITY & NOTIFICATION SIDEBAR (280px) -->
-    <aside class="snow-sidebar-right">
-      <!-- Section: Notifications (Live Threat Feed) -->
+    <!-- Recent activity and runtime status -->
+    <aside class="snow-sidebar-right" data-lenis-prevent>
       <div>
-        <div class="snow-right-section-title">Notifications</div>
+        <div class="snow-right-section-title">Recent alerts</div>
         <div class="snow-feed-list" id="snow-threat-feed">
-          <div class="snow-feed-item">
-            <div class="snow-feed-avatar">⚡</div>
-            <div class="snow-feed-content">
-              <div class="snow-feed-text">Autonomous block enacted for IP <strong>198.51.100.23</strong></div>
-              <div class="snow-feed-time">Just now</div>
-            </div>
-          </div>
-          <div class="snow-feed-item">
-            <div class="snow-feed-avatar" style="color:var(--snow-accent-cyan);">🛡️</div>
-            <div class="snow-feed-content">
-              <div class="snow-feed-text">Isolation Forest calibrated to baseline telemetry</div>
-              <div class="snow-feed-time">5m ago</div>
-            </div>
-          </div>
+          <div class="snow-feed-empty">No alert events received yet.</div>
         </div>
       </div>
 
-      <!-- Section: Incident Activities -->
       <div>
-        <div class="snow-right-section-title">Activities</div>
+        <div class="snow-right-section-title">Activity</div>
         <div class="snow-feed-list" id="snow-activity-feed">
-          <div class="snow-feed-item">
-            <div class="snow-feed-avatar">●</div>
-            <div class="snow-feed-content">
-              <div class="snow-feed-text">FastAPI telemetry daemon initialized on port 8000</div>
-              <div class="snow-feed-time">System</div>
-            </div>
-          </div>
-          <div class="snow-feed-item">
-            <div class="snow-feed-avatar">●</div>
-            <div class="snow-feed-content">
-              <div class="snow-feed-text">SQLite persistence verified at <code>data/netguard.sqlite3</code></div>
-              <div class="snow-feed-time">System</div>
-            </div>
-          </div>
+          <div class="snow-feed-empty">Actions from this session will appear here.</div>
         </div>
       </div>
 
-      <!-- Section: Monitored Endpoints -->
       <div>
-        <div class="snow-right-section-title">Monitored Endpoints</div>
+        <div class="snow-right-section-title">Runtime</div>
         <div class="snow-endpoint-list">
           <div class="snow-endpoint-item">
             <div class="snow-endpoint-meta">
-              <span class="snow-endpoint-title">Border Gateway</span>
-              <span class="snow-endpoint-ip">192.168.1.1</span>
+              <span class="snow-endpoint-title">Traffic source</span>
+              <span class="snow-endpoint-ip" id="current-source-text">Lab simulation</span>
             </div>
-            <span class="snow-pulse-dot" title="Active"></span>
+            <span class="snow-pulse-dot" id="source-status-dot" title="Active"></span>
           </div>
           <div class="snow-endpoint-item">
             <div class="snow-endpoint-meta">
-              <span class="snow-endpoint-title">DMZ Target Server</span>
-              <span class="snow-endpoint-ip">10.0.0.15</span>
+              <span class="snow-endpoint-title">Detection method</span>
+              <span class="snow-endpoint-ip" id="runtime-engine-text">Rules only</span>
             </div>
-            <span class="snow-pulse-dot" style="background-color: var(--snow-accent-orange); box-shadow: 0 0 8px rgba(255,201,153,0.6);" title="Elevated Ingress"></span>
-          </div>
-          <div class="snow-endpoint-item">
-            <div class="snow-endpoint-meta">
-              <span class="snow-endpoint-title">Core Cluster Node</span>
-              <span class="snow-endpoint-ip">10.0.0.80</span>
-            </div>
-            <span class="snow-pulse-dot" title="Protected"></span>
+            <span class="snow-pulse-dot" id="engine-status-dot" title="Active"></span>
           </div>
         </div>
       </div>
     </aside>
   </div>
 
+  <button class="scroll-to-top" id="scroll-to-top" type="button" aria-label="Scroll to top" hidden>
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"></path></svg>
+  </button>
+
   <!-- Toast Notification Container -->
   <div class="snow-toast" id="snow-toast"></div>
 
   <!-- Main Application Logic -->
-  <script src="/static/app.js"></script>
+  <script defer src="https://unpkg.com/lenis@1.3.27/dist/lenis.min.js"></script>
+  <script defer src="/static/vendor/gsap.min.js?v=1"></script>
+  <script defer src="/static/app.js?v=7"></script>
 </body>
 </html>

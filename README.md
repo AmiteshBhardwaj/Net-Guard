@@ -13,7 +13,9 @@ python -m pip install -r requirements.txt
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-On Linux/macOS, activate the environment with `source .venv/bin/activate`. Open [http://127.0.0.1:8000](http://127.0.0.1:8000).
+On Linux/macOS, activate the environment with `source .venv/bin/activate`. Open [http://127.0.0.1:8000](http://127.0.0.1:8000) for the landing page, then choose **Open dashboard** (or go directly to `/dashboard`).
+
+The landing page bundles Lenis from `frontend/`. GSAP 3.12.5 and its matching ScrollTrigger plugin remain local assets in `static/vendor/` and choreograph the scroll-linked text and signal animations. Rebuild after changing the frontend with Node.js 20.19 or newer: run `npm ci` and then `npm run build` from `frontend/`. The build writes to `static/landing-assets/`, which FastAPI serves with the rest of the page.
 
 ## Deploy on Render
 
@@ -22,7 +24,7 @@ This repository includes `render.yaml` for a public Render Free web service.
 1. Push the repository to GitHub.
 2. In Render, choose **New +** > **Blueprint**, then select this repository.
 3. Review the detected `netguard` service and deploy it. Render installs `requirements.txt`, starts FastAPI with the platform-provided `PORT`, and checks `/api/health`.
-4. Open the generated `https://<service-name>.onrender.com` URL. Confirm `/api/health`, launch a simulated PortScan, and watch the dashboard alert feed.
+4. Open the generated `https://<service-name>.onrender.com` URL and choose **Open dashboard** (or add `/dashboard`). Confirm `/api/health`, launch a simulated PortScan, and watch the dashboard alert feed.
 
 Free Render services spin down when idle and can take about a minute to wake. Their filesystem is ephemeral: SQLite alerts, blocks, and attack history reset after a restart or redeploy. This deployment supports dashboard simulation, PCAP replay, APIs, and WebSockets. Live Scapy capture still requires a local lab machine with packet-capture permissions and a supported driver.
 
