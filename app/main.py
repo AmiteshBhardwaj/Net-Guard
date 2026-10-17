@@ -168,7 +168,12 @@ class WhitelistRequest(BaseModel):
 
 
 @app.get("/")
-async def dashboard() -> FileResponse:
+async def landing_page() -> FileResponse:
+    return FileResponse(ROOT / "static" / "landing.html")
+
+
+@app.get("/dashboard")
+async def dashboard_page() -> FileResponse:
     return FileResponse(ROOT / "static" / "index.html")
 
 
