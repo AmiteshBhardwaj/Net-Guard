@@ -7,6 +7,7 @@ from typing import Any
 
 from fastapi import APIRouter, Body, HTTPException, Query
 
+from app.config import DB_PATH
 from backend.blast_radius.engine import compute_blast_radius
 from backend.blast_radius.models import Asset, BlastResult, Link, TopologyPayload
 from backend.blast_radius.topology import ensure_blast_schema, load_assets, load_links, seed_demo_topology, validate_topology
@@ -15,11 +16,15 @@ router = APIRouter(prefix="/api/blast")
 
 
 def _db_state() -> sqlite3.Connection:
-    from app.main import DB_PATH
-
     connection = sqlite3.connect(DB_PATH)
     connection.row_factory = sqlite3.Row
     return connection
+
+
+def _blast_service() -> Any:
+    import app.main
+
+    return app.main.app.state.blast_service
 
 
 @router.get("/topology")
@@ -86,7 +91,7 @@ async def simulate_blast(payload: dict[str, Any] | None = Body(default=None)) ->
     item = payload or {}
     asset_id = str(item.get("asset_id", "dmz-server"))
     attack_type = str(item.get("attack_type", "PortScan"))
-    service = getattr(__import__("app.main", fromlist=["app"]).app.state, "blast_service", None)
+    service = _blast_service()
     if service is None:
         raise HTTPException(status_code=503, detail="Blast service unavailable")
     try:
@@ -97,7 +102,7 @@ async def simulate_blast(payload: dict[str, Any] | None = Body(default=None)) ->
 
 @router.post("/reset")
 async def reset_blast() -> dict[str, Any]:
-    service = getattr(__import__("app.main", fromlist=["app"]).app.state, "blast_service", None)
+    service = _blast_service()
     if service is None:
         raise HTTPException(status_code=503, detail="Blast service unavailable")
     await service.reset()

@@ -15,6 +15,23 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 
 On Linux/macOS, activate the environment with `source .venv/bin/activate`. Open [http://127.0.0.1:8000](http://127.0.0.1:8000).
 
+## Project layout
+
+```text
+app/              Application entrypoints and runtime configuration
+  config.py       Shared paths and environment settings
+  core.py         Threat detection engine and flow logic
+  main.py         FastAPI app and HTTP/WebSocket routes
+  sources.py      Packet capture and PCAP ingestion helpers
+backend/          Backend services and domain logic
+  blast_radius/   Blast-radius topology and incident modeling
+static/           Browser assets served by FastAPI
+scripts/          Model-training utilities
+settings:         Environment variables via NETGUARD_DATA_DIR, NETGUARD_WHITELIST
+```
+
+This keeps configuration in one place and avoids importing database configuration from the app entry module.
+
 ## Deploy on Render
 
 This repository includes `render.yaml` for a public Render Free web service.
