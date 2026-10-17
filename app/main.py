@@ -19,8 +19,12 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from app.config import DB_PATH, MODEL_PATH, ROOT, STATIC_DIR
 from app.core import DecisionEngine, Flow, env_whitelist, private_target
 from app.sources import CaptureSource, flows_from_pcap
+from backend.blast_radius.router import router as blast_router
+from backend.blast_radius.service import BlastService
+from backend.blast_radius.topology import ensure_blast_schema, seed_demo_topology
 from app.threat_dashboard_api import (
     init_db_tables,
     router as threat_dashboard_router,
@@ -47,7 +51,8 @@ def load_model() -> Any:
 
 engine = DecisionEngine(load_model(), whitelist=env_whitelist())
 app = FastAPI(title="NetGuard", version="1.0.0")
-app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+app.include_router(blast_router)
 capture = CaptureSource()
 clients: set[WebSocket] = set()
 client_lock = asyncio.Lock()
@@ -102,6 +107,7 @@ async def broadcast(payload: dict[str, Any]) -> None:
             clients.discard(socket)
 
 
+app.state.blast_service = BlastService(broadcast, db)
 set_broadcaster(broadcast)
 set_db_provider(db)
 app.include_router(threat_dashboard_router)
@@ -152,6 +158,7 @@ def on_live_flow(flow: Flow) -> None:
 @app.on_event("startup")
 async def startup() -> None:
     app.state.loop = asyncio.get_running_loop()
+    app.state.blast_service = BlastService(broadcast, db)
 
 
 class AttackRequest(BaseModel):

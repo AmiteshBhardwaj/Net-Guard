@@ -17,6 +17,23 @@ On Linux/macOS, activate the environment with `source .venv/bin/activate`. Open 
 
 The landing page bundles Lenis from `frontend/`. GSAP 3.12.5 and its matching ScrollTrigger plugin remain local assets in `static/vendor/` and choreograph the scroll-linked text and signal animations. Rebuild after changing the frontend with Node.js 20.19 or newer: run `npm ci` and then `npm run build` from `frontend/`. The build writes to `static/landing-assets/`, which FastAPI serves with the rest of the page.
 
+## Project layout
+
+```text
+app/              Application entrypoints and runtime configuration
+  config.py       Shared paths and environment settings
+  core.py         Threat detection engine and flow logic
+  main.py         FastAPI app and HTTP/WebSocket routes
+  sources.py      Packet capture and PCAP ingestion helpers
+backend/          Backend services and domain logic
+  blast_radius/   Blast-radius topology and incident modeling
+static/           Browser assets served by FastAPI
+scripts/          Model-training utilities
+settings:         Environment variables via NETGUARD_DATA_DIR, NETGUARD_WHITELIST
+```
+
+This keeps configuration in one place and avoids importing database configuration from the app entry module.
+
 ## Deploy on Render
 
 This repository includes `render.yaml` for a public Render Free web service.
@@ -29,6 +46,10 @@ This repository includes `render.yaml` for a public Render Free web service.
 Free Render services spin down when idle and can take about a minute to wake. Their filesystem is ephemeral: SQLite alerts, blocks, and attack history reset after a restart or redeploy. This deployment supports dashboard simulation, PCAP replay, APIs, and WebSockets. Live Scapy capture still requires a local lab machine with packet-capture permissions and a supported driver.
 
 The default source is **Lab simulation**. The attack buttons generate bounded, labeled telemetry inside the app and send it through the same flow detector; they do not send packets or requests to the target. The target field accepts only loopback or RFC1918 IPv4 addresses. This source is always labeled as simulated in the dashboard.
+
+## Dashboard demo mode
+
+Open `/?mock=1` to run the dashboard's scripted UI without the backend. Use the sidebar to switch between Overview, Incident Lab, Threat Overview, Isolation Forest, Attack Lab, Demo Ingress, and Live Sniffer; each view also has a matching URL hash (for example `/?mock=1#incident-lab`). Use **Inject anomaly** or one of the simulated attack buttons to play the normal → detected → responding → contained sequence. In Attack Lab, **Reset mock lab** clears the scripted counters. Add `&state=normal`, `&state=elevated`, `&state=critical`, or `&state=contained` to preview a specific theme. Press **P** or use **Presenter** to toggle the large-screen layout. Mock telemetry is clearly marked and never makes API or WebSocket requests.
 
 ## Traffic sources
 

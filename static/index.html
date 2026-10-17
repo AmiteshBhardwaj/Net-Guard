@@ -3,374 +3,197 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#e5e5dd">
-  <title>NetGuard // Threat Defense & Detection Dashboard</title>
-  <script>
-    try {
-      if (localStorage.getItem('netguard-theme') === 'dark') {
-        document.documentElement.dataset.theme = 'dark';
-      }
-    } catch (_) {}
-  </script>
-  <link rel="stylesheet" href="/static/style.css?v=5">
-  <link rel="stylesheet" href="https://unpkg.com/lenis@1.3.27/dist/lenis.css">
+  <meta name="theme-color" content="#07111a">
+  <title>NetGuard — Network Threat Monitor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/tokens.css">
+  <link rel="stylesheet" href="/static/redesign.css">
 </head>
 <body>
-  <div class="page-scroll-progress" id="page-scroll-progress" aria-hidden="true"></div>
-  <div class="snow-app-shell">
-    <!-- 1. LEFT NAVIGATION SIDEBAR (220px) -->
-    <aside class="snow-sidebar-left" data-lenis-prevent>
-      <a href="/" class="snow-brand-user">
-        <div class="snow-avatar-badge">NG</div>
-        <div class="snow-brand-name">NetGuard</div>
-      </a>
-
-      <!-- Navigation: Favorites -->
-      <div class="snow-nav-section-title">Workspace</div>
-      <ul class="snow-nav-list">
-        <li>
-          <a href="#overview" class="snow-nav-item active">
-            <span class="snow-nav-icon">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-            </span>
-            <span>Overview</span>
-          </a>
-        </li>
-        <li>
-          <a href="#audit-log" class="snow-nav-item">
-            <span class="snow-nav-icon">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
-            </span>
-            <span>Activity log</span>
-          </a>
-        </li>
-      </ul>
-
-      <!-- Navigation: Dashboards -->
-      <div class="snow-nav-section-title">Tools</div>
-      <ul class="snow-nav-list">
-        <li>
-          <a href="#simulations" class="snow-nav-item">
-            <span class="snow-nav-icon">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-            </span>
-            <span>Attack lab</span>
-          </a>
-        </li>
-        <li>
-          <a href="#model-details" class="snow-nav-item" id="nav-isolation-forest">
-            <span class="snow-nav-icon">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-            </span>
-            <span>Detection method</span>
-          </a>
-        </li>
-      </ul>
-
-      <!-- Navigation: Traffic Sources -->
-      <div class="snow-nav-section-title">Traffic source</div>
-      <ul class="snow-nav-list">
-        <li>
-          <a href="#" class="snow-nav-item active" id="source-demo-toggle">
-            <span class="snow-nav-icon">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-            </span>
-            <span>Lab simulation</span>
-          </a>
-        </li>
-        <li>
-          <a href="#" class="snow-nav-item" id="source-live-toggle">
-            <span class="snow-nav-icon">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect><rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect><line x1="6" y1="6" x2="6.01" y2="6"></line><line x1="6" y1="18" x2="6.01" y2="18"></line></svg>
-            </span>
-            <span>Live capture</span>
-          </a>
-        </li>
-      </ul>
-
-      <!-- Footer Brand Signature -->
-      <div class="snow-sidebar-footer">
-        <div class="snowui-logo">
-          <span class="snow-pulse-dot"></span>Local security lab
-        </div>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#overview"><span class="brand-mark">N</span><span>NETGUARD<small>NETWORK DEFENSE</small></span></a>
+      <div class="side-label">FAVORITES</div>
+      <a class="nav-item active" href="#overview" data-dashboard-link="overview"><span class="nav-icon">⌂</span>Overview</a>
+      <a class="nav-item" href="#incident-lab" data-dashboard-link="incident-lab"><span class="nav-icon">◎</span>Incident Lab<span class="nav-count" id="side-alert-count">0</span></a>
+      <div class="side-label nav-section">DASHBOARDS</div>
+      <a class="nav-item" href="#threat-overview" data-dashboard-link="threat-overview"><span class="nav-icon">◈</span>Threat Overview</a>
+      <a class="nav-item" href="#isolation-forest" data-dashboard-link="isolation-forest"><span class="nav-icon">◉</span>Isolation Forest</a>
+      <a class="nav-item" href="#attack-lab" data-dashboard-link="attack-lab"><span class="nav-icon">⌁</span>Attack Lab</a>
+      <a class="nav-item" href="#blast-radius" data-dashboard-link="blast-radius"><span class="nav-icon">◌</span>Blast Radius</a>
+      <div class="side-label nav-section">TRAFFIC SOURCES</div>
+      <a class="nav-item" href="#demo-ingress" data-dashboard-link="demo-ingress"><span class="nav-icon">⌁</span>Demo Ingress</a>
+      <a class="nav-item" href="#live-sniffer" data-dashboard-link="live-sniffer"><span class="nav-icon">◉</span>Live Sniffer</a>
+      <div class="sidebar-bottom">
+        <div class="secure-card"><span class="secure-icon">⌑</span><strong>SAFE LAB MODE</strong><p>Simulations create labeled local telemetry. No traffic is sent to external hosts.</p></div>
+        <div class="user-chip"><span class="avatar">NG</span><span>Local operator<small>Administrator</small></span><span class="online-dot"></span></div>
       </div>
     </aside>
 
-    <!-- 2. CENTER MAIN WORKSPACE -->
-    <main class="snow-main-content">
-      <!-- TOPBAR -->
-      <header class="snow-topbar">
-        <div class="snow-topbar-left">
-          <div class="snow-breadcrumb">
-            <span>NetGuard</span>
-            <span>/</span>
-            <strong>Threat overview</strong>
-          </div>
-          <div class="snow-search-bar">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <input type="text" id="snow-search-input" placeholder="Search IP, port, or detection" autocomplete="off">
-            <kbd class="snow-search-shortcut">⌘/</kbd>
-          </div>
-        </div>
-
-        <div class="snow-topbar-actions">
-          <div class="snow-status-indicator">
-            <span class="snow-pulse-dot" id="ws-pulse-dot"></span>
-            <span id="ws-status-text">Connecting</span>
-          </div>
-          <button class="snow-btn theme-toggle" id="btn-theme-toggle" type="button" aria-label="Switch to dark mode" aria-pressed="false">
-            <svg class="theme-icon theme-icon-moon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.9 13A8.5 8.5 0 0 1 11 3.1 8.5 8.5 0 1 0 20.9 13Z"></path></svg>
-            <svg class="theme-icon theme-icon-sun" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"></path></svg>
-            <span id="theme-toggle-label">Dark mode</span>
-          </button>
-          <button class="snow-btn primary" id="btn-toggle-stream">Start sample stream</button>
-          <button class="snow-btn danger" id="btn-inject-anomaly">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-            Inject test event
-          </button>
-          <button class="snow-btn" id="btn-export-csv">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            Export alerts
-          </button>
+    <main class="main-content" id="overview">
+      <header class="topbar">
+        <div class="breadcrumb"><span>Dashboards</span> / <strong id="breadcrumb-page">Overview</strong></div>
+        <div class="top-actions">
+          <label class="search-box" for="dashboard-search"><span>⌕</span><input id="dashboard-search" type="search" placeholder="Search IP, port, or tactic"></label>
+          <span class="live-indicator"><i></i><span id="connection-label">CONNECTING</span></span>
+          <button class="icon-button" id="refresh-button" type="button" title="Refresh dashboard" aria-label="Refresh dashboard">↻</button>
+          <button class="stream-toggle" id="stream-toggle" type="button"><i></i>Start stream</button>
+          <button class="top-inject-button" id="inject-button" type="button">⚡ Inject anomaly</button>
+          <button class="icon-button" id="export-button" title="Export alert feed" aria-label="Export alert feed">↓</button>
+          <button class="presenter-toggle" id="presenter-toggle" type="button" aria-pressed="false"><span>▣</span><kbd>P</kbd></button>
         </div>
       </header>
 
-      <div class="snow-section-header" id="overview">
-        <div class="snow-page-heading">
-          <div class="snow-page-eyebrow">NETGUARD / TRAFFIC DESK</div>
-          <h1>Threat overview</h1>
-          <p>Traffic, alerts, and detector health for this runtime.</p>
-        </div>
-        <div class="snow-action-group" id="simulations" aria-label="Safe lab simulations">
-          <span class="snow-action-caption">Run a lab simulation</span>
-          <select class="snow-select" id="stream-speed-select" aria-label="Sample interval">
-            <option value="0.5">0.5 second interval</option>
-            <option value="1.0" selected>1 second interval</option>
-            <option value="2.0">2 second interval</option>
-          </select>
-          <button class="snow-btn" data-launch="portscan">Port scan</button>
-          <button class="snow-btn" data-launch="bruteforce">Brute force</button>
-          <button class="snow-btn" data-launch="dos">DoS burst</button>
+      <section class="page-heading">
+        <div><div class="eyebrow">NETWORK OPERATIONS CENTER <span class="eyebrow-line"></span></div><h1 id="dashboard-title">Overview<span class="title-period">.</span></h1><p id="dashboard-description">Network activity and threat detections across monitored traffic.</p></div>
+      </section>
+
+      <div class="workspace-toolbar">
+        <span class="toolbar-date" id="clock">Today</span>
+        <div class="toolbar-controls">
+          <label class="speed-control">Speed: <select id="replay-speed" aria-label="Traffic or replay speed"><option value="1">1.0s (Normal)</option><option value="2">2.0s</option><option value="5">5.0s</option><option value="10">10.0s</option></select></label>
+          <button class="quick-sim-button" data-attack="portscan">Simulate PortScan</button>
+          <button class="quick-sim-button" data-attack="bruteforce">Simulate BruteForce</button>
+          <button class="quick-sim-button" data-attack="dos">Simulate DoS</button>
         </div>
       </div>
 
-      <!-- Current runtime indicators -->
-      <section class="snow-kpi-grid">
-        <!-- Card 1: Ingress Flows -->
-        <div class="snow-kpi-card blue">
-          <div class="snow-kpi-card-label">Flows processed</div>
-          <div class="snow-kpi-card-row">
-            <div class="snow-kpi-card-value" id="kpi-flows">0</div>
-            <div class="snow-kpi-badge">Current runtime</div>
-          </div>
-        </div>
+      <div class="notice-bar" id="source-notice"><span class="notice-symbol">i</span><span><strong>LAB SIMULATION</strong> — demo launches feed labeled simulated flows into the detector. They are not captured network packets.</span><button id="notice-dismiss" aria-label="Dismiss">×</button></div>
 
-        <!-- Card 2: Threats Detected -->
-        <div class="snow-kpi-card purple">
-          <div class="snow-kpi-card-label">Alerts raised</div>
-          <div class="snow-kpi-card-row">
-            <div class="snow-kpi-card-value" id="kpi-threats">0</div>
-            <div class="snow-kpi-badge">Saved alerts</div>
-          </div>
-        </div>
-
-        <!-- Card 3: Ingress Blocks -->
-        <div class="snow-kpi-card blue">
-          <div class="snow-kpi-card-label">IPs blocked</div>
-          <div class="snow-kpi-card-row">
-            <div class="snow-kpi-card-value" id="kpi-blocks">0</div>
-            <div class="snow-kpi-badge">Application blocklist</div>
-          </div>
-        </div>
-
-        <!-- Card 4: Detection Engine -->
-        <div class="snow-kpi-card purple" id="model-details">
-          <div class="snow-kpi-card-label">Detection method</div>
-          <div class="snow-kpi-card-row">
-            <div class="snow-kpi-card-value" id="kpi-engine">Rules only</div>
-            <div class="snow-kpi-badge" id="kpi-engine-badge">Current mode</div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Detector sample trend and the active flow checks -->
-      <section class="snow-middle-grid">
-        <!-- Left: detector sample size over time -->
-        <div class="snow-card-container">
-          <div class="snow-card-header">
-            <div class="snow-card-title-group">
-              <h2 class="snow-card-title">Packet size over sample stream</h2>
-              <div class="snow-card-nav"><span>Generated detector samples</span></div>
+      <div class="dashboard-grid">
+        <div class="center-column">
+          <section class="dashboard-view is-active" data-dashboard="overview" aria-label="Overview dashboard">
+            <section class="kpi-grid" aria-label="Network metrics">
+              <article class="kpi-card" data-kpi="pps"><div class="kpi-top"><span>FLOWS PROCESSED</span><span class="kpi-icon blue">⌁</span></div><div class="kpi-value" id="kpi-pps">0</div><div class="kpi-foot"><span class="subtle">Current rate <b id="kpi-rate">0</b> packets/sec</span><span class="kpi-tag">INGRESS</span></div></article>
+              <article class="kpi-card threat-kpi" data-kpi="alerts"><div class="kpi-top"><span>THREATS DETECTED</span><span class="kpi-icon coral">◎</span></div><div class="kpi-value" id="kpi-alerts">0</div><div class="kpi-foot"><span class="subtle">Rule + model detections</span><span class="risk-label"><i></i><span id="threat-label">MONITORING</span></span></div></article>
+              <article class="kpi-card" data-kpi="blocked"><div class="kpi-top"><span>LOCAL BLOCKLIST</span><span class="kpi-icon mint">⊘</span></div><div class="kpi-value" id="kpi-blocked">0</div><div class="kpi-foot"><span class="subtle">Application-level only</span><span class="kpi-tag">LOCAL ONLY</span></div></article>
+              <article class="kpi-card" data-kpi="engine"><div class="kpi-top"><span>DETECTION ENGINE</span><span class="kpi-icon violet">◉</span></div><div class="engine-kpi"><strong id="engine-kpi-name">Rules</strong><span id="engine-kpi-confidence">ACTIVE</span></div><div class="kpi-foot"><span class="subtle" id="engine-kpi-caption">Isolation Forest status</span><span class="kpi-tag">ENGINE</span></div></article>
+            </section>
+            <div class="overview-grid">
+              <section class="panel traffic-panel">
+                <div class="panel-heading"><div><div class="panel-title">Total ingress & outlier telemetry</div><div class="panel-subtitle">Packets/sec · anomalies highlighted in red</div></div><div class="chart-legend"><span><i class="legend-normal"></i>Ingress</span><span><i class="legend-threat"></i>Outlier</span></div></div>
+                <div class="chart-wrap"><div class="axis-labels"><span>120</span><span>80</span><span>40</span><span>0</span></div><canvas id="traffic-chart" aria-label="Live packets per second chart"></canvas><div class="chart-sweep"></div><div class="chart-pin" id="chart-pin"></div></div>
+                <div class="chart-time"><span>−60s</span><span>−45s</span><span>−30s</span><span>−15s</span><span>NOW</span></div>
+              </section>
+              <section class="panel tactics-panel">
+                <div class="panel-heading"><div><div class="panel-title">Threats by attack tactic</div><div class="panel-subtitle">Detected vector distribution</div></div><span class="small-badge">ALL VECTORS</span></div>
+                <div class="tactic-bars" id="type-bars"><div class="skeleton-line"></div><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+              </section>
             </div>
-            <div class="snow-chart-legend">
-              <div class="snow-legend-item">
-                <span class="snow-legend-dot" style="background-color: var(--snow-accent-coral);"></span>
-                <span>Sample size</span>
+            <div class="overview-lower-grid">
+              <section class="panel protocol-panel"><div class="panel-heading"><div><div class="panel-title">Telemetry provenance</div><div class="panel-subtitle">Source status from the active pipeline</div></div><span class="small-badge" id="overview-source">LAB SIMULATION</span></div><div class="provenance-note" id="overview-telemetry">Flow and packet-rate values are supplied by the existing stats endpoint. Protocol breakdown is not available.</div></section>
+              <section class="panel overview-engine"><div class="panel-heading"><div><div class="panel-title">Detection engine status</div><div class="panel-subtitle">Model activity at a glance</div></div><span class="engine-live"><i></i> ACTIVE</span></div><div class="engine-overview-value" id="overview-engine-status">Rules active</div><div class="model-note">Open Isolation Forest for confidence, evaluation metrics, and anomaly score detail.</div></section>
+            </div>
+          </section>
+
+          <section class="dashboard-view" data-dashboard="incident-lab" aria-label="Incident response dashboard" hidden>
+            <div class="incident-summary" id="incident-summary" hidden><div class="summary-kicker"><i></i> INCIDENT CONTAINED</div><h2>Attack neutralized</h2><div class="summary-grid"><span>ATTACK TYPE</span><strong id="summary-attack">—</strong><span>SOURCE IP</span><strong id="summary-source" class="mono">—</strong><span>TIME TO DETECT</span><strong id="summary-detect">—</strong><span>TIME TO BLOCK</span><strong id="summary-block">—</strong><span>PACKETS DROPPED</span><strong id="summary-dropped">—</strong></div></div>
+            <div class="secondary-grid response-grid">
+              <section class="panel timeline-panel"><div class="panel-heading"><div><div class="panel-title">Autonomous response</div><div class="panel-subtitle">Detection-to-containment sequence</div></div><span class="elapsed-badge" id="response-elapsed">STANDBY</span></div><ol class="response-steps" id="response-steps"><li class="response-idle">Awaiting a detection event</li></ol></section>
+              <section class="panel network-panel"><div class="panel-heading"><div><div class="panel-title">Network map</div><div class="panel-subtitle">Illustrative monitored topology</div></div><span class="small-badge">3 NODES</span></div><div class="network-map" id="network-map"><svg viewBox="0 0 420 150" preserveAspectRatio="none" aria-label="Illustrative network topology"><path class="network-edge" d="M74 75 H210 H346"/><path class="network-edge secondary-edge" d="M210 75 V126 H346"/></svg><div class="network-node gateway" data-node="gateway"><i></i><strong>Border Gateway</strong><small>EDGE · 10.0.0.1</small></div><div class="network-node dmz" data-node="dmz"><i></i><strong>DMZ Server</strong><small>TARGET · 10.0.2.14</small></div><div class="network-node core" data-node="core"><i></i><strong>Core Node</strong><small>INTERNAL · 10.0.1.8</small></div><span class="network-packet"></span><span class="network-break">×</span><span class="attacker-blocked-x">×</span></div><div class="endpoint-status"><span class="endpoint-dot"></span><span>Monitored endpoints</span><strong id="endpoint-label">3 HEALTHY</strong></div></section>
+            </div>
+            <section class="panel terminal-panel"><div class="panel-heading"><div><div class="panel-title">Live attack feed</div><div class="panel-subtitle">Event stream · latest first</div></div><span class="terminal-state"><i></i> TAILING</span></div><div class="terminal-window" id="attack-log" role="log" aria-live="polite"><div class="terminal-line system-line"><span>SYS</span> NetGuard telemetry initialized<span class="terminal-cursor">▋</span></div></div></section>
+            <div class="recommend-card incident-recommend" id="recommend-card" hidden><div class="recommend-mark">✓</div><div><strong>Recommended actions ready</strong><p>Review the source, affected endpoint, and ordered remediation steps.</p></div><button id="open-actions" type="button">Review actions</button></div>
+          </section>
+
+          <section class="dashboard-view" data-dashboard="isolation-forest" aria-label="Isolation Forest dashboard" hidden>
+            <section class="panel model-panel">
+              <div class="panel-heading"><div><div class="panel-title">Isolation Forest detection engine</div><div class="panel-subtitle">Live confidence and offline validation metrics</div></div><span class="small-badge">ENGINE STATUS</span></div>
+              <div class="engine-body"><div class="gauge" id="anomaly-gauge"><svg viewBox="0 0 120 74" aria-hidden="true"><path class="gauge-track" d="M 14 64 A 46 46 0 0 1 106 64"/><path class="gauge-progress" id="gauge-arc" d="M 14 64 A 46 46 0 0 1 106 64"/></svg><span class="gauge-needle" id="gauge-needle"></span><span class="gauge-value" id="gauge-value">0.00</span><small>ANOMALY SCORE</small></div><div class="engine-details"><span class="model-status"><i class="model-status-dot" id="model-dot"></i><span id="model-status">Rules active · model not trained</span></span><div class="metric-grid"><div class="metric"><span>PRECISION</span><strong id="metric-precision">—</strong></div><div class="metric"><span>RECALL</span><strong id="metric-recall">—</strong></div><div class="metric"><span>F1 SCORE</span><strong id="metric-f1">—</strong></div><div class="metric"><span>FALSE ALARM</span><strong id="metric-far">—</strong></div></div></div></div>
+              <p class="model-note" id="model-note">Rules active. Metrics appear when an offline evaluation report is available.</p>
+            </section>
+            <section class="panel engine-explainer"><div class="panel-heading"><div><div class="panel-title">Model evaluation</div><div class="panel-subtitle">Metrics are sourced from the existing model endpoint.</div></div></div><div class="engine-evaluation"><span>Detection source</span><strong id="engine-overview-model">Explainable rules</strong><span>Model health</span><strong id="model-health">Waiting for telemetry</strong><span>Scoring mode</span><strong>Flow anomaly score</strong></div></section>
+          </section>
+
+          <section class="dashboard-view" data-dashboard="attack-lab" aria-label="Attack lab dashboard" hidden>
+            <section class="panel lab-panel" id="lab">
+              <div class="panel-heading"><div><div class="panel-title">Attack lab</div><div class="panel-subtitle">Generate bounded, labeled local demo telemetry</div></div><span class="lab-badge"><i></i> PRIVATE LAB</span></div>
+              <div class="lab-target"><label for="target-ip">LAB TARGET</label><div class="target-input"><span>⌖</span><input id="target-ip" value="127.0.0.1" spellcheck="false"><span class="target-lock">▣</span></div><span class="target-hint">Loopback or RFC1918 addresses only</span></div>
+              <div class="attack-buttons">
+                <button class="attack-button normal" data-attack="normal"><span class="attack-icon">⌂</span><span><strong>Normal browsing</strong><small>Generate baseline activity</small></span><span class="button-arrow">↗</span></button>
+                <button class="attack-button" data-attack="portscan"><span class="attack-icon scan">⌗</span><span><strong>Simulate PortScan</strong><small>60 destination ports</small></span><span class="button-arrow">↗</span></button>
+                <button class="attack-button" data-attack="bruteforce"><span class="attack-icon brute">⌁</span><span><strong>Simulate BruteForce</strong><small>Failed login burst</small></span><span class="button-arrow">↗</span></button>
+                <button class="attack-button" data-attack="dos"><span class="attack-icon dos">⌇</span><span><strong>Simulate DoS</strong><small>Rate-bounded demo burst</small></span><span class="button-arrow">↗</span></button>
               </div>
-              <div class="snow-legend-item">
-                <span class="snow-legend-dot" style="background-color: var(--snow-accent-lavender);"></span>
-                <span>Baseline</span>
+              <div class="launch-score"><div><span class="score-label">DEMO DETECTION SCORE</span><strong id="detection-score">—</strong></div><div class="score-track"><i id="score-bar"></i></div><span id="score-caption">No simulated attacks launched</span></div>
+              <button class="reset-lab-button" id="reset-lab" type="button" hidden>Reset mock lab</button>
+            </section>
+            <section class="panel lab-safety"><span class="secure-icon">⌑</span><div><strong>Safe by design</strong><p>Simulations generate local detector telemetry only. No packets or requests are sent to the target address.</p></div></section>
+          </section>
+
+          <section class="dashboard-view" data-dashboard="blast-radius" aria-label="Blast radius dashboard" hidden>
+            <section class="panel blast-radius-panel" id="blast-radius-panel">
+              <div class="panel-heading">
+                <div>
+                  <div class="panel-title">Blast radius map</div>
+                  <div class="panel-subtitle">Reachability, lateral movement, and likely next target</div>
+                </div>
+                <span class="small-badge" id="blast-badge">READY</span>
               </div>
-            </div>
-          </div>
-          <div class="snow-spline-chart-wrap">
-            <canvas id="snow-spline-chart"></canvas>
-            <div class="snow-chart-tooltip" id="spline-tooltip"></div>
-            <div class="snow-chart-empty" id="chart-empty-state">Waiting for sample data</div>
-          </div>
-        </div>
-
-        <!-- Right: supported detection rules -->
-        <div class="snow-card-container">
-          <div class="snow-card-header">
-            <h2 class="snow-card-title">Detection rules</h2>
-            <div class="snow-card-nav"><span>Local flow checks</span></div>
-          </div>
-          <div class="snow-progress-list">
-            <div class="snow-rule-item">
-              <span class="snow-rule-marker"></span>
-              <div><div class="snow-rule-name">Port scan</div><span class="snow-rule-detail">50+ destination ports within 5 seconds</span></div>
-            </div>
-            <div class="snow-rule-item">
-              <span class="snow-rule-marker"></span>
-              <div><div class="snow-rule-name">Brute force</div><span class="snow-rule-detail">Repeated failed logins from one source</span></div>
-            </div>
-            <div class="snow-rule-item">
-              <span class="snow-rule-marker"></span>
-              <div><div class="snow-rule-name">Request burst</div><span class="snow-rule-detail">60+ requests within 5 seconds</span></div>
-            </div>
-            <div class="snow-rule-item">
-              <span class="snow-rule-marker"></span>
-              <div><div class="snow-rule-name">Packet burst</div><span class="snow-rule-detail">60+ forward packets within 5 seconds</span></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Protocol mix and severity counts from the detector stream -->
-      <section class="snow-lower-grid">
-        <!-- Left: protocol mix -->
-        <div class="snow-card-container">
-          <div class="snow-card-header">
-            <h2 class="snow-card-title">Protocol mix</h2>
-            <div class="snow-chart-legend">
-              <div class="snow-legend-item">
-                <span class="snow-legend-dot" style="background-color: var(--snow-accent-cyan);"></span>
-                <span>Detector samples</span>
+              <div class="blast-grid">
+                <div class="blast-map" id="blast-map">
+                  <div class="map-loading">Loading asset topology…</div>
+                </div>
+                <div class="blast-side">
+                  <div class="blast-summary-card">
+                    <span class="mini-label">Selected origin</span>
+                    <strong id="blast-origin">dmz-server</strong>
+                  </div>
+                  <div class="blast-summary-card">
+                    <span class="mini-label">Assets at risk</span>
+                    <strong id="blast-assets-risk">0</strong>
+                  </div>
+                  <div class="blast-summary-card">
+                    <span class="mini-label">Likelihood</span>
+                    <strong id="blast-likelihood">0%</strong>
+                  </div>
+                  <div class="blast-summary-card">
+                    <span class="mini-label">Likely next target</span>
+                    <strong id="blast-next-target">—</strong>
+                  </div>
+                </div>
               </div>
+              <div class="blast-footer">
+                <div class="blast-node-list" id="blast-node-list"></div>
+              </div>
+            </section>
+          </section>
+
+          <section class="dashboard-view" data-dashboard="threat-overview" aria-label="Threat overview dashboard" hidden>
+            <div class="overview-grid">
+              <section class="panel traffic-panel"><div class="panel-heading"><div><div class="panel-title">Threat telemetry</div><div class="panel-subtitle">Packets/sec · red segments indicate detections</div></div><div class="chart-legend"><span><i class="legend-normal"></i>Ingress</span><span><i class="legend-threat"></i>Outlier</span></div></div><div class="chart-wrap"><div class="axis-labels"><span>120</span><span>80</span><span>40</span><span>0</span></div><canvas id="threat-chart" aria-label="Threat telemetry chart"></canvas><div class="chart-sweep"></div></div><div class="chart-time"><span>−60s</span><span>−45s</span><span>−30s</span><span>−15s</span><span>NOW</span></div></section>
+              <section class="panel tactics-panel"><div class="panel-heading"><div><div class="panel-title">Threats by attack tactic</div><div class="panel-subtitle">Detected attack categories</div></div><span class="small-badge">TACTICS</span></div><div class="tactic-bars tactic-bars-secondary" id="threat-type-bars"></div></section>
             </div>
-          </div>
-          <div class="snow-bar-chart-wrap">
-            <canvas id="snow-bar-canvas"></canvas>
-            <div class="snow-chart-empty" id="protocol-empty-state">No protocol samples yet</div>
-          </div>
+            <section class="panel threat-breakdown-panel"><div class="panel-heading"><div><div class="panel-title">Threat breakdown</div><div class="panel-subtitle">Detection counts and tactics</div></div><span class="small-badge">ALL TIME</span></div><div class="threat-breakdown" id="threat-breakdown"></div></section>
+          </section>
+
+          <section class="dashboard-view" data-dashboard="demo-ingress" aria-label="Demo ingress dashboard" hidden>
+            <section class="panel source-dashboard-panel"><div><div class="panel-title">Demo ingress source</div><div class="panel-subtitle">Choose which existing telemetry source to visualize.</div></div><div class="source-control"><span class="source-pulse"></span><select id="source-select"><option value="demo">Demo ingress</option><option value="live">Live capture</option><option value="pcap">PCAP replay</option></select><span class="chevron">⌄</span></div></section>
+            <section class="panel traffic-panel ingress-chart-panel"><div class="panel-heading"><div><div class="panel-title">Demo ingress telemetry</div><div class="panel-subtitle">Live packets/sec from the selected traffic source</div></div><div class="chart-legend"><span><i class="legend-normal"></i>Ingress</span><span><i class="legend-threat"></i>Outlier</span></div></div><div class="chart-wrap"><div class="axis-labels"><span>120</span><span>80</span><span>40</span><span>0</span></div><canvas id="ingress-chart" aria-label="Demo ingress traffic chart"></canvas><div class="chart-sweep"></div><div class="chart-pin" id="ingress-chart-pin"></div></div><div class="chart-time"><span>−60s</span><span>−45s</span><span>−30s</span><span>−15s</span><span>NOW</span></div></section>
+          </section>
+
+          <section class="dashboard-view" data-dashboard="live-sniffer" aria-label="Live sniffer dashboard" hidden>
+            <section class="panel capture-panel"><div class="capture-copy"><span class="capture-icon">◉</span><div><strong>Live capture</strong><p id="capture-help">Choose an interface. Capture may require admin rights and Npcap.</p></div></div><select id="interface-select" aria-label="Capture interface"><option value="">Select interface</option></select><button class="capture-toggle" id="capture-toggle">Start capture</button></section>
+            <section class="panel replay-panel"><div class="replay-copy"><span class="replay-icon">↻</span><div><strong>Replay a capture</strong><p>Upload a PCAP to process recorded traffic through the same flow detector.</p></div></div><label class="upload-button" for="pcap-file">Choose PCAP <span>↑</span></label><input id="pcap-file" type="file" accept=".pcap,.pcapng" hidden><span id="pcap-name" class="pcap-name">No file selected</span></section>
+            <section class="panel sniffer-status"><div class="panel-title">Capture status</div><p>Live capture and PCAP replay use the existing NetGuard traffic pipeline. Local permissions and capture adapters may affect availability.</p><div class="sniffer-status-line"><span>WebSocket</span><strong id="ws-status">connecting</strong></div></section>
+          </section>
         </div>
 
-        <!-- Right: severity counts -->
-        <div class="snow-card-container">
-          <div class="snow-card-header">
-            <h2 class="snow-card-title">Severity counts</h2>
-          </div>
-          <div class="snow-donut-wrap">
-            <div class="snow-donut-canvas-box">
-              <canvas id="snow-donut-canvas" width="140" height="140"></canvas>
-            </div>
-            <div class="snow-donut-legend-list" id="donut-legend-list">
-              <button class="snow-donut-legend-row snow-donut-filter" type="button" data-severity-toggle="critical" aria-pressed="true" aria-label="Toggle critical samples">
-                <div class="snow-legend-item">
-                  <span class="snow-legend-dot" style="background-color: var(--snow-accent-red);"></span>
-                  <span>Critical</span>
-                </div>
-                <span class="font-mono text-muted" id="legend-count-critical">0</span>
-              </button>
-              <button class="snow-donut-legend-row snow-donut-filter" type="button" data-severity-toggle="high" aria-pressed="true" aria-label="Toggle high severity samples">
-                <div class="snow-legend-item">
-                  <span class="snow-legend-dot" style="background-color: var(--snow-accent-coral);"></span>
-                  <span>High</span>
-                </div>
-                <span class="font-mono text-muted" id="legend-count-high">0</span>
-              </button>
-              <button class="snow-donut-legend-row snow-donut-filter" type="button" data-severity-toggle="medium" aria-pressed="true" aria-label="Toggle medium severity samples">
-                <div class="snow-legend-item">
-                  <span class="snow-legend-dot" style="background-color: var(--snow-accent-orange);"></span>
-                  <span>Medium</span>
-                </div>
-                <span class="font-mono text-muted" id="legend-count-medium">0</span>
-              </button>
-              <button class="snow-donut-legend-row snow-donut-filter" type="button" data-severity-toggle="low" aria-pressed="true" aria-label="Toggle low severity samples">
-                <div class="snow-legend-item">
-                  <span class="snow-legend-dot" style="background-color: var(--snow-accent-mint);"></span>
-                  <span>Low</span>
-                </div>
-                <span class="font-mono text-muted" id="legend-count-low">0</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
+        <aside class="panel alerts-panel" id="alerts">
+          <div class="panel-heading"><div><div class="panel-title">Notifications</div><div class="panel-subtitle">Security events and system activity</div></div><span class="feed-live"><i></i> LIVE</span></div>
+          <div class="notification-summary"><strong id="notification-count">0</strong><span>recent events</span><span class="notification-signal"></span></div>
+          <div class="alert-list" id="alert-list"><div class="notification-skeleton"><i></i><span></span><span></span></div><div class="notification-skeleton"><i></i><span></span><span></span></div><div class="notification-skeleton"><i></i><span></span><span></span></div></div>
+          <div class="panel-footer"><span id="feed-total">0 events</span><button class="text-button" id="clear-feed">Clear view <span>↗</span></button></div>
+          <section class="activity-section"><h2>Activities</h2><div class="activity-item"><i>●</i><span><strong>FastAPI telemetry daemon</strong><small>Waiting for service status</small></span></div><div class="activity-item"><i>●</i><span><strong>SQLite persistence</strong><small>Local event history</small></span></div><div class="activity-item"><i>●</i><span><strong>Detection pipeline</strong><small id="activity-model">Rules active</small></span></div></section>
+          <section class="endpoint-section"><h2>Monitored endpoints <small>ILLUSTRATIVE</small></h2><div class="endpoint-card"><span class="endpoint-dot"></span><span><strong>Border Gateway</strong><small>10.0.0.1</small></span></div><div class="endpoint-card" id="endpoint-asset"><span class="endpoint-dot"></span><span><strong>DMZ Target Server</strong><small id="endpoint-target">10.0.2.14</small></span></div><div class="endpoint-card"><span class="endpoint-dot"></span><span><strong>Core Cluster Node</strong><small>10.0.1.8</small></span></div></section>
+          <div class="sidebar-footer"><span>ENGINE</span><strong><i class="model-status-dot"></i> <span id="rail-engine-status">RULES ACTIVE</span></strong></div>
+        </aside>
+      </div>
 
-      <!-- AUDIT TABLE: INCIDENT & TELEMETRY LOGS -->
-      <section class="snow-table-card" id="audit-log">
-        <div class="snow-table-toolbar">
-          <div>
-            <h2 class="snow-card-title">Alert log</h2>
-            <div class="snow-feed-time">Source events from the current runtime</div>
-          </div>
-          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-            <select class="snow-select" id="filter-severity" aria-label="Filter Severity">
-              <option value="">All Severities</option>
-              <option value="CRITICAL">Critical</option>
-              <option value="HIGH">High</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="LOW">Low</option>
-            </select>
-            <select class="snow-select" id="filter-protocol" aria-label="Filter Protocol">
-              <option value="">All Protocols</option>
-              <option value="TCP">TCP</option>
-              <option value="UDP">UDP</option>
-              <option value="ICMP">ICMP</option>
-            </select>
-            <select class="snow-select" id="filter-anomaly" aria-label="Filter Anomaly">
-              <option value="">All alerts</option>
-              <option value="1">Blocked sources</option>
-              <option value="0">Unblocked sources</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="snow-table-wrap">
-          <table class="snow-table" id="audit-table">
-            <thead>
-              <tr>
-                <th>Timestamp</th>
-                <th>Source IP</th>
-                <th>Destination IP</th>
-                <th>Port / Protocol</th>
-                <th>Confidence</th>
-                <th>Detection</th>
-                <th>Severity</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="audit-table-body">
-              <tr>
-                <td colspan="8" style="text-align:center; padding:30px; color:var(--snow-text-muted);">
-                  Loading alerts...
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="snow-table-pagination">
-          <span id="pagination-info">Showing 0 of 0 records</span>
-          <div class="snow-pagination-controls">
-            <button class="snow-table-btn" id="btn-prev-page" disabled>Previous</button>
-            <span id="page-indicator" style="font-size:12px; font-weight:500;">Page 1</span>
-            <button class="snow-table-btn" id="btn-next-page">Next</button>
-          </div>
-        </div>
-      </section>
+      <footer class="footer"><span><i></i> NETGUARD LOCAL MONITOR</span><span>DETECT <b>·</b> EXPLAIN <b>·</b> RESPOND</span><span>WebSocket <strong>live telemetry</strong></span></footer>
     </main>
 
     <!-- Recent activity and runtime status -->
@@ -410,17 +233,7 @@
       </div>
     </aside>
   </div>
-
-  <button class="scroll-to-top" id="scroll-to-top" type="button" aria-label="Scroll to top" hidden>
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"></path></svg>
-  </button>
-
-  <!-- Toast Notification Container -->
-  <div class="snow-toast" id="snow-toast"></div>
-
-  <!-- Main Application Logic -->
-  <script defer src="https://unpkg.com/lenis@1.3.27/dist/lenis.min.js"></script>
-  <script defer src="/static/vendor/gsap.min.js?v=1"></script>
-  <script defer src="/static/app.js?v=7"></script>
+  <div class="toast" id="toast" role="status"></div>
+  <script src="/static/app.js"></script>
 </body>
 </html>
