@@ -1,0 +1,22 @@
+name: Keep Render Service Awake
+
+on:
+  schedule:
+    # Render free tier spins down after 15 minutes of inactivity.
+    # Run every 14 minutes to prevent idle spin-down.
+    - cron: '*/14 * * * *'
+  workflow_dispatch:
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Health Endpoint
+        run: |
+          TARGET_URL="${{ secrets.RENDER_EXTERNAL_URL || vars.RENDER_EXTERNAL_URL }}"
+          if [ -z "$TARGET_URL" ]; then
+            echo "RENDER_EXTERNAL_URL is not configured in repository variables/secrets. Skipping ping."
+            exit 0
+          fi
+          echo "Sending keep-alive ping to $TARGET_URL/api/health..."
+          curl -s -f -m 30 "$TARGET_URL/api/health" || echo "Ping attempted."

@@ -7,9 +7,11 @@ import hmac
 import json
 import logging
 import threading
+import os
 import time
+import urllib.request
 import uuid
-from contextlib import contextmanager
+from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -50,8 +52,46 @@ def load_model() -> Any:
         return None
 
 
+async def _keep_alive_task(target_url: str, interval_seconds: int = 600) -> None:
+    health_url = f"{target_url.rstrip('/')}/api/health"
+    logger.info("Keep-alive task started for %s (interval: %ds)", health_url, interval_seconds)
+    await asyncio.sleep(60)
+    while True:
+        try:
+            loop = asyncio.get_running_loop()
+            await loop.run_in_executor(
+                None,
+                lambda: urllib.request.urlopen(
+                    urllib.request.Request(
+                        health_url,
+                        headers={"User-Agent": "NetGuard-KeepAlive/1.0"},
+                    ),
+                    timeout=15,
+                ).read(),
+            )
+            logger.info("Keep-alive ping sent to %s", health_url)
+        except Exception as exc:
+            logger.warning("Keep-alive ping to %s failed: %s", health_url, exc)
+        await asyncio.sleep(interval_seconds)
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    keep_alive_url = os.getenv("NETGUARD_KEEP_ALIVE_URL") or os.getenv("RENDER_EXTERNAL_URL")
+    task = None
+    if keep_alive_url and keep_alive_url.strip():
+        task = asyncio.create_task(_keep_alive_task(keep_alive_url.strip()))
+    yield
+    if task:
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
+
 engine = DecisionEngine(load_model(), whitelist=env_whitelist())
-app = FastAPI(title="NetGuard", version="1.0.0")
+app = FastAPI(title="NetGuard", version="1.0.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,

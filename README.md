@@ -10,10 +10,10 @@ Python 3.11 is recommended.
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+python -m uvicorn app.main:app --env-file .env --host 127.0.0.1 --port 8000
 ```
 
-On Linux/macOS, activate the environment with `source .venv/bin/activate`. Open [http://127.0.0.1:8000](http://127.0.0.1:8000) for the landing page, then choose **Open dashboard** (or go directly to `/dashboard`).
+On Linux/macOS, activate the environment with `source .venv/bin/activate`, then run `python -m uvicorn app.main:app --env-file .env --host 127.0.0.1 --port 8000`. The local `.env` is ignored by Git; add `NETGUARD_DATABASE_URL` there if you want to connect this local backend to Supabase. Keep that connection string private. Open [http://127.0.0.1:8000](http://127.0.0.1:8000) for the landing page, then choose **Open dashboard** (or go directly to `/dashboard`).
 
 The landing page bundles Lenis from `frontend/`. GSAP 3.12.5 and its matching ScrollTrigger plugin remain local assets in `static/vendor/` and choreograph the scroll-linked text and signal animations. Rebuild after changing the frontend with Node.js 20.19 or newer: run `npm ci` and then `npm run build` from `frontend/`. The build writes to `static/landing-assets/`, which FastAPI serves with the rest of the page.
 
