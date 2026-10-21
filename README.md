@@ -46,26 +46,22 @@ This repository includes `render.yaml` for a public Render Free web service.
 4. Open the generated `https://<service-name>.onrender.com` URL and choose **Open dashboard** (or add `/dashboard`). Confirm `/api/health`, launch a simulated PortScan, and watch the dashboard alert feed.
 
 Free Render services spin down when idle and can take about a minute to wake. Their filesystem is ephemeral: SQLite alerts, blocks, and attack history reset after a restart or redeploy. This deployment supports dashboard simulation, PCAP replay, APIs, and WebSockets. Use an always-on backend plan for consistently fast access. Live Scapy capture still requires a local lab machine with packet-capture permissions and a supported driver.
+## Persistent PostgreSQL storage with Supabase (Optional)
 
-## Deploy frontend on Vercel with Supabase
-
-The Vercel deployment serves the static website and dashboard. The FastAPI application must still run on an always-on host that supports WebSockets, and Supabase PostgreSQL stores persistent application data. This keeps the browser UI, API, and database on the platforms that fit them.
+The FastAPI application on Render serves the static website, dashboard, API, and WebSockets. To persist application data across restarts and redeployments, connect a Supabase PostgreSQL database:
 
 1. Create a Supabase project and copy its PostgreSQL connection string. Keep the database URL private; it is only a backend environment variable. You can run `supabase/migrations/20261021000000_initial_schema.sql` in the Supabase SQL Editor, or let the backend initialize its schema on startup.
-2. Deploy this repository's FastAPI app to a host that supports WebSockets (the included Render Blueprint can be used as a starting point; choose an always-on plan to avoid idle wake-up delays). Configure:
+2. In your backend hosting environment (e.g., Render), configure:
    - `NETGUARD_DATABASE_URL`: the Supabase PostgreSQL connection string, with TLS enabled.
-   - `NETGUARD_CORS_ORIGINS`: comma-separated exact frontend origins, such as `https://your-project.vercel.app`. Add each production/custom domain used by the browser.
-   - `NETGUARD_CAPTURE_MODE=agent` and a long random `NETGUARD_AGENT_TOKEN` if live capture should come from your local network. Do not use the token as a Vercel environment variable.
-3. In Vercel, import this repository with the repository root as the project root. Set the build environment variable `NETGUARD_API_URL` to the backend's HTTPS origin (for example `https://netguard-api.example.com`, with no path). Vercel reads `vercel.json`, builds the landing-page assets, and writes the frontend into `vercel-dist/`.
-4. Open `/`, `/dashboard`, or `/threat-dashboard` on the Vercel domain. Check `/api/health` directly on the backend and run a simulated attack from the dashboard.
+   - `NETGUARD_CAPTURE_MODE=agent` and a long random `NETGUARD_AGENT_TOKEN` if live capture should come from your local network via the remote agent.
 
-The backend supports Supabase PostgreSQL through `NETGUARD_DATABASE_URL` (or `DATABASE_URL`); without either variable, it continues to use local SQLite. Switching a deployment from SQLite to Supabase does not copy existing SQLite history; the Supabase database starts empty unless you migrate that data separately. Do not expose the database URL or agent token in frontend code. The app currently has no operator login, so deploy the public demo with that limitation in mind and use platform access controls or add application authentication before exposing sensitive data or administrative operations.
+The backend supports Supabase PostgreSQL through `NETGUARD_DATABASE_URL` (or `DATABASE_URL`); without either variable, it continues to use local SQLite. Switching a deployment from SQLite to Supabase does not copy existing SQLite history; the Supabase database starts empty unless you migrate that data separately. Do not expose the database URL or agent token in client-facing code. The app currently has no operator login, so deploy the public demo with that limitation in mind and use platform access controls or add application authentication before exposing sensitive data or administrative operations.
 
 Run one backend process/worker for this version. WebSocket clients and live counters are process-local; scaling to multiple backend instances requires a shared event bus and shared runtime-state handling in addition to Supabase.
 
 ### Live capture agent
 
-Vercel and hosted application servers cannot capture traffic from your local network. In `agent` capture mode, run the included agent on a machine that has Scapy, packet-capture permissions, and access to the desired interface:
+Hosted application servers cannot capture traffic from your local network. In `agent` capture mode, run the included agent on a machine that has Scapy, packet-capture permissions, and access to the desired interface:
 
 ```bash
 export NETGUARD_AGENT_TOKEN='<same secret configured on the backend>'
