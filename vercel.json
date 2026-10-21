@@ -1,10 +1,10 @@
 {
   "services": {
     "frontend": {
-      "root": ".",
-      "framework": null,
-      "installCommand": "npm --prefix frontend ci",
-      "buildCommand": "npm --prefix frontend run build && node scripts/build_vercel.mjs",
+      "root": "frontend",
+      "framework": "vite",
+      "installCommand": "npm ci",
+      "buildCommand": "npm run build && node ../scripts/build_vercel.mjs",
       "outputDirectory": "vercel-dist",
       "rewrites": [
         { "source": "/dashboard", "destination": "/static/index.html" },

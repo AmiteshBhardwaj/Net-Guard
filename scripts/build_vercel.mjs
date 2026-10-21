@@ -21,7 +21,7 @@ if (backend.username || backend.password || backend.search || backend.hash || ba
 }
 
 const root = resolve(import.meta.dirname, "..");
-const output = resolve(root, "vercel-dist");
+const output = resolve(root, "frontend", "vercel-dist");
 await rm(output, { recursive: true, force: true });
 await mkdir(output, { recursive: true });
 await cp(resolve(root, "static"), resolve(output, "static"), { recursive: true });
