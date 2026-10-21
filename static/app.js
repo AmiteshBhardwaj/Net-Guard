@@ -74,7 +74,7 @@
   // Generic API Helper
   async function api(url, options = {}) {
     try {
-      const res = await fetch(url, options);
+      const res = await fetch(window.netguardApiUrl(url), options);
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
       return data;
@@ -592,8 +592,7 @@
   let splineChart, barChart, donutChart;
 
   function connectSocket() {
-    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${proto}//${location.host}/ws`;
+    const wsUrl = window.netguardWebSocketUrl('/ws');
     const pulseDot = $('#ws-pulse-dot');
     const statusText = $('#ws-status-text');
 

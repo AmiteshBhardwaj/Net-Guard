@@ -3,24 +3,25 @@
 from __future__ import annotations
 
 import asyncio
+import hmac
 import json
-import os
-import sqlite3
+import logging
 import threading
 import time
 import uuid
-from collections import deque
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Header, HTTPException, Request, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from app.config import DB_PATH, MODEL_PATH, ROOT, STATIC_DIR
+from app.config import AGENT_TOKEN, CAPTURE_MODE, CORS_ORIGINS, DB_PATH, MODEL_PATH, ROOT, STATIC_DIR
 from app.core import DecisionEngine, Flow, env_whitelist, private_target
+from app.database import connect_database
 from app.sources import CaptureSource, flows_from_pcap
 from backend.blast_radius.router import router as blast_router
 from backend.blast_radius.service import BlastService
@@ -33,10 +34,10 @@ from app.threat_dashboard_api import (
 )
 
 ROOT = Path(__file__).resolve().parent.parent
-DATA_DIR = Path(os.getenv("NETGUARD_DATA_DIR", ROOT / "data"))
-DB_PATH = DATA_DIR / "netguard.sqlite3"
 MODEL_PATH = ROOT / "models" / "netguard.joblib"
-DATA_DIR.mkdir(parents=True, exist_ok=True)
+logger = logging.getLogger("netguard")
+if CAPTURE_MODE not in {"local", "agent"}:
+    raise ValueError("NETGUARD_CAPTURE_MODE must be 'local' or 'agent'")
 
 
 def load_model() -> Any:
@@ -51,6 +52,13 @@ def load_model() -> Any:
 
 engine = DecisionEngine(load_model(), whitelist=env_whitelist())
 app = FastAPI(title="NetGuard", version="1.0.0")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CORS_ORIGINS,
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.include_router(blast_router)
 capture = CaptureSource()
@@ -67,8 +75,7 @@ state: dict[str, Any] = {
 
 @contextmanager
 def db():
-    connection = sqlite3.connect(DB_PATH, timeout=10)
-    connection.row_factory = sqlite3.Row
+    connection = connect_database(DB_PATH)
     try:
         yield connection
         connection.commit()
@@ -81,15 +88,17 @@ def db():
 
 def init_db() -> None:
     with db() as conn:
-        conn.execute("CREATE TABLE IF NOT EXISTS alerts (id TEXT PRIMARY KEY, ts REAL, src TEXT, dst TEXT, dport INTEGER, label TEXT, prob REAL, severity TEXT, reasons TEXT, blocked INTEGER, protocol TEXT)")
-        conn.execute("CREATE TABLE IF NOT EXISTS attacks (id TEXT PRIMARY KEY, ts REAL, attack TEXT, status TEXT, detected INTEGER DEFAULT 0)")
-        conn.execute("CREATE TABLE IF NOT EXISTS blocks (ip TEXT PRIMARY KEY, ts REAL)")
+        conn.execute("CREATE TABLE IF NOT EXISTS alerts (id TEXT PRIMARY KEY, ts DOUBLE PRECISION, src TEXT, dst TEXT, dport INTEGER, label TEXT, prob DOUBLE PRECISION, severity TEXT, reasons TEXT, blocked INTEGER, protocol TEXT)")
+        conn.execute("CREATE TABLE IF NOT EXISTS attacks (id TEXT PRIMARY KEY, ts DOUBLE PRECISION, attack TEXT, status TEXT, detected INTEGER DEFAULT 0)")
+        conn.execute("CREATE TABLE IF NOT EXISTS blocks (ip TEXT PRIMARY KEY, ts DOUBLE PRECISION)")
         init_db_tables(conn)
+        ensure_blast_schema(conn)
+        seed_demo_topology(conn)
 
 
 init_db()
 with db() as conn:
-    state["blocked"].update(row[0] for row in conn.execute("SELECT ip FROM blocks").fetchall())
+    state["blocked"].update(row["ip"] for row in conn.execute("SELECT ip FROM blocks").fetchall())
 if engine.model is not None:
     state["model_status"] = "trained model loaded"
 
@@ -134,11 +143,21 @@ async def process_flow(flow: Flow) -> dict[str, Any] | None:
         await broadcast({"type": "flow", "ts": flow.ended, "src": flow.src, "label": "Normal"})
         return None
     with db() as conn:
-        conn.execute("INSERT OR REPLACE INTO alerts VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (
-            alert["id"], alert["ts"], alert["src"], alert["dst"], alert["dport"],
-            alert["label"], alert["prob"], alert["severity"], json.dumps(alert["reasons"]),
-            int(alert["blocked"]), alert.get("protocol", "TCP"),
-        ))
+        conn.execute(
+            """
+            INSERT INTO alerts (id, ts, src, dst, dport, label, prob, severity, reasons, blocked, protocol)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                ts=excluded.ts, src=excluded.src, dst=excluded.dst, dport=excluded.dport,
+                label=excluded.label, prob=excluded.prob, severity=excluded.severity,
+                reasons=excluded.reasons, blocked=excluded.blocked, protocol=excluded.protocol
+            """,
+            (
+                alert["id"], alert["ts"], alert["src"], alert["dst"], alert["dport"],
+                alert["label"], alert["prob"], alert["severity"], json.dumps(alert["reasons"]),
+                int(alert["blocked"]), alert.get("protocol", "TCP"),
+            ),
+        )
         with state_lock:
             active_id = state["active_attack_id"] if state["active_attack_label"] == alert["label"] else None
         if active_id:
@@ -174,6 +193,32 @@ class WhitelistRequest(BaseModel):
     ips: list[str]
 
 
+class AgentFlow(BaseModel):
+    src: str
+    dst: str
+    dport: int = Field(ge=0, le=65535)
+    sport: int | None = Field(default=None, ge=0, le=65535)
+    protocol: str = "TCP"
+    started: float
+    ended: float
+    forward_packets: int = Field(default=0, ge=0)
+    backward_packets: int = Field(default=0, ge=0)
+    forward_bytes: int = Field(default=0, ge=0)
+    backward_bytes: int = Field(default=0, ge=0)
+    syn_count: int = Field(default=0, ge=0)
+    ack_count: int = Field(default=0, ge=0)
+    rst_count: int = Field(default=0, ge=0)
+    login_failures: int = Field(default=0, ge=0)
+    request_count: int = Field(default=0, ge=0)
+
+    def to_flow(self) -> Flow:
+        return Flow(**self.model_dump())
+
+
+class AgentFlowBatch(BaseModel):
+    flows: list[AgentFlow] = Field(min_length=1, max_length=250)
+
+
 @app.get("/")
 async def landing_page() -> FileResponse:
     return FileResponse(ROOT / "static" / "landing.html")
@@ -204,9 +249,10 @@ async def stats() -> dict[str, Any]:
         flows_processed = state["flows_processed"]
         blocked_count = len(state["blocked"])
     with db() as conn:
-        alerts = conn.execute("SELECT COUNT(*) FROM alerts").fetchone()[0]
-        launched, detected = conn.execute("SELECT COUNT(*), COALESCE(SUM(detected),0) FROM attacks WHERE attack != 'Normal'").fetchone()
-        types = conn.execute("SELECT label, COUNT(*) count FROM alerts GROUP BY label").fetchall()
+        alerts = conn.execute("SELECT COUNT(*) AS count FROM alerts").fetchone()["count"]
+        attack_counts = conn.execute("SELECT COUNT(*) AS launched, COALESCE(SUM(detected),0) AS detected FROM attacks WHERE attack != 'Normal'").fetchone()
+        launched, detected = attack_counts["launched"], attack_counts["detected"]
+        types = conn.execute("SELECT label, COUNT(*) AS count FROM alerts GROUP BY label").fetchall()
     return {
         "source": source, "interface": interface, "packets_per_second": recent_packets,
         "flows_processed": flows_processed, "alerts": alerts, "blocked_ips": blocked_count,
@@ -229,15 +275,39 @@ async def set_source(request: SourceRequest) -> dict[str, Any]:
     if capture.running:
         capture.stop()
     if request.source == "live":
-        try:
-            capture.start(request.interface, on_live_flow)
-        except RuntimeError as exc:
-            raise HTTPException(503, str(exc)) from exc
+        if CAPTURE_MODE == "agent":
+            if not AGENT_TOKEN:
+                raise HTTPException(503, "Live capture agent is not configured on this backend")
+        else:
+            try:
+                capture.start(request.interface, on_live_flow)
+            except RuntimeError as exc:
+                raise HTTPException(503, str(exc)) from exc
     with state_lock:
         state["source"] = request.source
         state["interface"] = request.interface if request.source == "live" else None
     await broadcast({"type": "source", "source": request.source, "interface": request.interface})
     return {"source": request.source, "interface": request.interface}
+
+
+@app.post("/api/agent/flows")
+async def ingest_agent_flows(
+    batch: AgentFlowBatch,
+    authorization: str | None = Header(default=None),
+) -> dict[str, int]:
+    if CAPTURE_MODE != "agent" or not AGENT_TOKEN:
+        raise HTTPException(503, "Remote capture agent is not enabled")
+    expected = f"Bearer {AGENT_TOKEN}"
+    if authorization is None or not hmac.compare_digest(authorization, expected):
+        raise HTTPException(401, "Invalid capture agent credentials")
+    with state_lock:
+        if state["source"] != "live":
+            raise HTTPException(409, "Select live capture in the dashboard before sending flows")
+    alerts = 0
+    for item in batch.flows:
+        if await process_flow(item.to_flow()) is not None:
+            alerts += 1
+    return {"flows_received": len(batch.flows), "alerts_created": alerts}
 
 
 @app.post("/api/replay")
@@ -331,7 +401,7 @@ async def launch_attack(attack: str, request: AttackRequest) -> dict[str, Any]:
         await asyncio.sleep(.003)
     with db() as conn:
         conn.execute("UPDATE attacks SET status='complete' WHERE id=?", (run_id,))
-        detected = bool(conn.execute("SELECT detected FROM attacks WHERE id=?", (run_id,)).fetchone()[0])
+        detected = bool(conn.execute("SELECT detected FROM attacks WHERE id=?", (run_id,)).fetchone()["detected"])
     with state_lock:
         state["active_attack_id"] = None
         state["active_attack_label"] = None
@@ -348,7 +418,10 @@ async def block_ip(ip: str) -> dict[str, Any]:
     with state_lock:
         state["blocked"].add(safe_ip)
     with db() as conn:
-        conn.execute("INSERT OR REPLACE INTO blocks VALUES (?,?)", (safe_ip, time.time()))
+        conn.execute(
+            "INSERT INTO blocks (ip, ts) VALUES (?, ?) ON CONFLICT(ip) DO UPDATE SET ts=excluded.ts",
+            (safe_ip, time.time()),
+        )
         conn.execute("UPDATE alerts SET blocked=1 WHERE src=?", (safe_ip,))
     await broadcast({"type": "blocked", "ip": safe_ip, "simulated": True})
     return {"ip": safe_ip, "blocked": True, "simulated": True}
@@ -388,6 +461,12 @@ async def model_info() -> dict[str, Any]:
 
 @app.websocket("/ws")
 async def websocket_feed(socket: WebSocket) -> None:
+    origin = socket.headers.get("origin")
+    scheme = "https" if socket.url.scheme == "wss" else "http"
+    request_origin = f"{scheme}://{socket.headers.get('host', '')}"
+    if origin and origin.rstrip("/") != request_origin.rstrip("/") and origin.rstrip("/") not in CORS_ORIGINS:
+        await socket.close(code=1008)
+        return
     await socket.accept()
     async with client_lock:
         clients.add(socket)
@@ -409,4 +488,3 @@ async def interfaces() -> dict[str, Any]:
     except Exception:
         names = []
     return {"interfaces": names, "available": bool(names)}
-

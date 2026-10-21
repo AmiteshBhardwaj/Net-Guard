@@ -1,6 +1,6 @@
 """FastAPI router and real-time streaming pipeline for Threat Detection Dashboard.
 
-Provides REST endpoints, SQLite persistence, and WebSocket broadcasting for
+Provides REST endpoints, database persistence, and WebSocket broadcasting for
 Isolation Forest anomaly detection telemetry.
 """
 
@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import sqlite3
 from typing import Any, Callable, Coroutine
 from fastapi import APIRouter, Query
 from pydantic import BaseModel, Field
@@ -36,21 +35,21 @@ def set_db_provider(db_fn: Callable[[], Any]) -> None:
     _db_context_fn = db_fn
 
 
-def init_db_tables(conn: sqlite3.Connection) -> None:
+def init_db_tables(conn: Any) -> None:
     conn.execute(
         """
         CREATE TABLE IF NOT EXISTS threat_detector_logs (
             id TEXT PRIMARY KEY,
-            ts REAL,
+            ts DOUBLE PRECISION,
             time_step INTEGER,
-            packet_size REAL,
+            packet_size DOUBLE PRECISION,
             src_port INTEGER,
             dst_port INTEGER,
             protocol TEXT,
             protocol_code INTEGER,
             is_anomaly INTEGER,
-            anomaly_score REAL,
-            confidence REAL,
+            anomaly_score DOUBLE PRECISION,
+            confidence DOUBLE PRECISION,
             severity TEXT,
             reasons TEXT,
             action_taken TEXT
@@ -75,11 +74,19 @@ def record_log(result: dict[str, Any]) -> None:
     with _db_context_fn() as conn:
         conn.execute(
             """
-            INSERT OR REPLACE INTO threat_detector_logs (
+            INSERT INTO threat_detector_logs (
                 id, ts, time_step, packet_size, src_port, dst_port,
                 protocol, protocol_code, is_anomaly, anomaly_score,
                 confidence, severity, reasons, action_taken
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                ts=excluded.ts, time_step=excluded.time_step,
+                packet_size=excluded.packet_size, src_port=excluded.src_port,
+                dst_port=excluded.dst_port, protocol=excluded.protocol,
+                protocol_code=excluded.protocol_code, is_anomaly=excluded.is_anomaly,
+                anomaly_score=excluded.anomaly_score, confidence=excluded.confidence,
+                severity=excluded.severity, reasons=excluded.reasons,
+                action_taken=excluded.action_taken
             """,
             (
                 result["id"],
@@ -142,18 +149,18 @@ async def get_stats() -> dict[str, Any]:
         return {"status": "uninitialized"}
 
     with _db_context_fn() as conn:
-        row_tot = conn.execute("SELECT COUNT(*) FROM threat_detector_logs").fetchone()
-        total = int(row_tot[0]) if row_tot else 0
-        row_anom = conn.execute("SELECT COUNT(*) FROM threat_detector_logs WHERE is_anomaly=1").fetchone()
-        anomalies = int(row_anom[0]) if row_anom else 0
-        row_avg = conn.execute("SELECT AVG(packet_size) FROM (SELECT packet_size FROM threat_detector_logs ORDER BY ts DESC LIMIT 50)").fetchone()
-        avg_packet = float(row_avg[0]) if (row_avg and row_avg[0] is not None) else 0.0
+        row_tot = conn.execute("SELECT COUNT(*) AS count FROM threat_detector_logs").fetchone()
+        total = int(row_tot["count"]) if row_tot else 0
+        row_anom = conn.execute("SELECT COUNT(*) AS count FROM threat_detector_logs WHERE is_anomaly=1").fetchone()
+        anomalies = int(row_anom["count"]) if row_anom else 0
+        row_avg = conn.execute("SELECT AVG(packet_size) AS average FROM (SELECT packet_size FROM threat_detector_logs ORDER BY ts DESC LIMIT 50)").fetchone()
+        avg_packet = float(row_avg["average"]) if (row_avg and row_avg["average"] is not None) else 0.0
         
-        severity_rows = conn.execute("SELECT severity, COUNT(*) FROM threat_detector_logs GROUP BY severity").fetchall()
-        protocol_rows = conn.execute("SELECT protocol, COUNT(*) FROM threat_detector_logs GROUP BY protocol").fetchall()
+        severity_rows = conn.execute("SELECT severity, COUNT(*) AS count FROM threat_detector_logs GROUP BY severity").fetchall()
+        protocol_rows = conn.execute("SELECT protocol, COUNT(*) AS count FROM threat_detector_logs GROUP BY protocol").fetchall()
 
-    severity_counts = {row[0]: row[1] for row in severity_rows}
-    protocol_counts = {row[0]: row[1] for row in protocol_rows}
+    severity_counts = {row["severity"]: row["count"] for row in severity_rows}
+    protocol_counts = {row["protocol"]: row["count"] for row in protocol_rows}
 
     return {
         "total_samples": total,
@@ -194,14 +201,14 @@ async def get_logs(
         query += " AND UPPER(protocol) = ?"
         params.append(protocol.upper())
 
-    count_query = query.replace("SELECT *", "SELECT COUNT(*)")
+    count_query = query.replace("SELECT *", "SELECT COUNT(*) AS count")
 
     query += " ORDER BY ts DESC LIMIT ? OFFSET ?"
     params_for_query = list(params) + [limit, offset]
 
     with _db_context_fn() as conn:
         row_cnt = conn.execute(count_query, params).fetchone()
-        total = int(row_cnt[0]) if row_cnt else 0
+        total = int(row_cnt["count"]) if row_cnt else 0
         rows = conn.execute(query, params_for_query).fetchall()
 
     items = []

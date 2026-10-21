@@ -2,12 +2,10 @@ from __future__ import annotations
 
 import asyncio
 import json
-import sqlite3
 from typing import Any
 
 from fastapi import APIRouter, Body, HTTPException, Query
 
-from app.config import DB_PATH
 from backend.blast_radius.engine import compute_blast_radius
 from backend.blast_radius.models import Asset, BlastResult, Link, TopologyPayload
 from backend.blast_radius.topology import ensure_blast_schema, load_assets, load_links, seed_demo_topology, validate_topology
@@ -15,10 +13,10 @@ from backend.blast_radius.topology import ensure_blast_schema, load_assets, load
 router = APIRouter(prefix="/api/blast")
 
 
-def _db_state() -> sqlite3.Connection:
-    connection = sqlite3.connect(DB_PATH)
-    connection.row_factory = sqlite3.Row
-    return connection
+def _db_state() -> Any:
+    from app.main import db
+
+    return db()
 
 
 def _blast_service() -> Any:

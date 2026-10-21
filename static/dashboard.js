@@ -286,7 +286,7 @@
   }
 
   async function api(url, options = {}) {
-    const response = await fetch(url, options);
+    const response = await fetch(window.netguardApiUrl(url), options);
     let body;
     try {
       body = await response.json();
@@ -704,8 +704,7 @@
 
   function connectSocket() {
     if (state.mock) return;
-    const scheme = location.protocol === "https:" ? "wss" : "ws";
-    const socket = new WebSocket(`${scheme}://${location.host}/ws`);
+    const socket = new WebSocket(window.netguardWebSocketUrl("/ws"));
     state.socket = socket;
     socket.onopen = () => {
       $("#connection-label").textContent = "CONNECTED";

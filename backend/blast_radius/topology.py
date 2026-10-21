@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import json
-import sqlite3
 import sys
 from pathlib import Path
+from typing import Any
 
 DEFAULT_ASSETS = [
     {"id": "border-gateway", "name": "Border Gateway", "ip": "192.168.1.1", "zone": "Edge", "criticality": 5, "role": "gateway", "modeled": True, "status": "healthy"},
@@ -27,7 +27,7 @@ DEFAULT_LINKS = [
 ]
 
 
-def ensure_blast_schema(connection: sqlite3.Connection) -> None:
+def ensure_blast_schema(connection: Any) -> None:
     connection.execute(
         """
         CREATE TABLE IF NOT EXISTS assets (
@@ -51,7 +51,7 @@ def ensure_blast_schema(connection: sqlite3.Connection) -> None:
             ports TEXT,
             protocol TEXT,
             trust TEXT,
-            weight REAL,
+            weight DOUBLE PRECISION,
             bidirectional INTEGER DEFAULT 1,
             active INTEGER DEFAULT 1
         )
@@ -61,23 +61,23 @@ def ensure_blast_schema(connection: sqlite3.Connection) -> None:
         """
         CREATE TABLE IF NOT EXISTS blast_incidents (
             id TEXT PRIMARY KEY,
-            ts_hit REAL,
-            ts_contained REAL,
+            ts_hit DOUBLE PRECISION,
+            ts_contained DOUBLE PRECISION,
             origin_asset TEXT,
             attack_type TEXT,
             mitre_id TEXT,
             source_ip TEXT,
             before_json TEXT,
             after_json TEXT,
-            radius_reduction REAL
+            radius_reduction DOUBLE PRECISION
         )
         """
     )
 
 
-def seed_demo_topology(connection: sqlite3.Connection) -> int:
+def seed_demo_topology(connection: Any) -> int:
     ensure_blast_schema(connection)
-    assets_rows = connection.execute("SELECT COUNT(*) FROM assets").fetchone()[0]
+    assets_rows = connection.execute("SELECT COUNT(*) AS count FROM assets").fetchone()["count"]
     if assets_rows:
         return 0
     for asset in DEFAULT_ASSETS:
@@ -94,7 +94,7 @@ def seed_demo_topology(connection: sqlite3.Connection) -> int:
     return len(DEFAULT_ASSETS)
 
 
-def load_assets(connection: sqlite3.Connection) -> list[dict[str, object]]:
+def load_assets(connection: Any) -> list[dict[str, object]]:
     rows = connection.execute("SELECT * FROM assets ORDER BY name").fetchall()
     return [
         {
@@ -111,7 +111,7 @@ def load_assets(connection: sqlite3.Connection) -> list[dict[str, object]]:
     ]
 
 
-def load_links(connection: sqlite3.Connection) -> list[dict[str, object]]:
+def load_links(connection: Any) -> list[dict[str, object]]:
     rows = connection.execute("SELECT * FROM links ORDER BY id").fetchall()
     links: list[dict[str, object]] = []
     for row in rows:

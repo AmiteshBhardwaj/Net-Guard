@@ -42,7 +42,7 @@
   }
 
   async function api(url, options = {}) {
-    const resp = await fetch(url, options);
+    const resp = await fetch(window.netguardApiUrl(url), options);
     const body = await resp.json().catch(() => ({ detail: resp.statusText }));
     if (!resp.ok) throw new Error(body.detail || `HTTP ${resp.status}`);
     return body;
@@ -325,8 +325,7 @@
 
   // WebSocket Connection
   function connectSocket() {
-    const scheme = location.protocol === 'https:' ? 'wss' : 'ws';
-    const socket = new WebSocket(`${scheme}://${location.host}/ws`);
+    const socket = new WebSocket(window.netguardWebSocketUrl("/ws"));
     state.socket = socket;
 
     socket.onopen = () => {

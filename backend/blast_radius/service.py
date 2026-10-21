@@ -100,6 +100,7 @@ class BlastService:
                 conn.execute("UPDATE links SET active = 0 WHERE src = ? OR dst = ?", (asset["id"], asset["id"]))
                 assets = load_assets(conn)
                 links = load_links(conn)
+                severed_edges = [link["id"] for link in links if link["src"] == asset["id"] or link["dst"] == asset["id"]]
                 before = compute_blast_radius(asset["id"], assets, links, set())
                 after = compute_blast_radius(asset["id"], assets, links, {asset["id"]})
                 ts_hit = time.time()
@@ -109,7 +110,7 @@ class BlastService:
                     reduction = max(0.0, 100.0 * (1.0 - (after["summary"].get("assets_at_risk", 0) / before["summary"].get("assets_at_risk", 1))))
                 row = conn.execute("SELECT id FROM blast_incidents WHERE origin_asset = ? ORDER BY ts_hit DESC LIMIT 1", (asset["id"],)).fetchone()
                 if row is not None:
-                    incident_id = row[0]
+                    incident_id = row["id"]
                     conn.execute(
                         "UPDATE blast_incidents SET ts_contained = ?, after_json = ?, radius_reduction = ? WHERE id = ?",
                         (ts_hit, json.dumps(after), reduction, incident_id),
@@ -123,7 +124,7 @@ class BlastService:
                 "type": "blast.contained",
                 "incident_id": incident_id,
                 "ts": time.time(),
-                "severed_edges": [link["id"] for link in load_links(self.db_factory()) if link["src"] == asset["id"] or link["dst"] == asset["id"]],
+                "severed_edges": severed_edges,
                 "quarantined": [asset["id"]],
                 "after": after,
                 "radius_reduction_pct": round(reduction, 2),

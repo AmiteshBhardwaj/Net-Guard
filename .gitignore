@@ -3,6 +3,7 @@ __pycache__/
 .venv/
 venv/
 frontend/node_modules/
+vercel-dist/
 .env
 data/*.db
 data/*.sqlite3
