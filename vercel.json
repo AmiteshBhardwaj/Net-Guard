@@ -1,11 +1,19 @@
 {
-  "framework": null,
-  "installCommand": "npm --prefix frontend ci",
-  "buildCommand": "npm --prefix frontend run build && node scripts/build_vercel.mjs",
-  "outputDirectory": "vercel-dist",
+  "services": {
+    "frontend": {
+      "root": ".",
+      "framework": null,
+      "installCommand": "npm --prefix frontend ci",
+      "buildCommand": "npm --prefix frontend run build && node scripts/build_vercel.mjs",
+      "outputDirectory": "vercel-dist",
+      "rewrites": [
+        { "source": "/dashboard", "destination": "/static/index.html" },
+        { "source": "/threat-dashboard", "destination": "/static/threat_dashboard.html" },
+        { "source": "/", "destination": "/static/landing.html" }
+      ]
+    }
+  },
   "rewrites": [
-    { "source": "/dashboard", "destination": "/static/index.html" },
-    { "source": "/threat-dashboard", "destination": "/static/threat_dashboard.html" },
-    { "source": "/", "destination": "/static/landing.html" }
+    { "source": "/(.*)", "destination": { "service": "frontend" } }
   ]
 }
