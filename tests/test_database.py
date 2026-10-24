@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from app.database import DatabaseConnection, connect_database
+from app.database import DatabaseConnection, connect_database, normalize_database_url
 
 
 class DatabaseConnectionTests(unittest.TestCase):
@@ -83,6 +83,18 @@ class DatabaseConnectionTests(unittest.TestCase):
                 "blast_incidents",
             }.issubset(tables)
         )
+
+    def test_normalize_database_url_encodes_special_characters_in_password(self):
+        raw = "postgresql://postgres.xxx:myP@ss@ini&gWin123@aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres?sslmode=require"
+        normalized = normalize_database_url(raw)
+        self.assertEqual(
+            normalized,
+            "postgresql://postgres.xxx:myP%40ss%40ini%26gWin123@aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres?sslmode=require",
+        )
+
+    def test_normalize_database_url_preserves_already_encoded_url(self):
+        url = "postgresql://postgres.xxx:myP%40ss%26123@aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres"
+        self.assertEqual(normalize_database_url(url), url)
 
 
 if __name__ == "__main__":

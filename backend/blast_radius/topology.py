@@ -176,7 +176,8 @@ def main() -> int:
     if len(sys.argv) < 2 or sys.argv[1] != "seed":
         print("Usage: python -m backend.blast_radius.topology seed")
         return 1
-    from app.main import DB_PATH, db
+    from app.config import DB_PATH
+    from app.main import db
 
     with db() as conn:
         seeded = seed_demo_topology(conn)

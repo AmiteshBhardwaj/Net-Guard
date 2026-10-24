@@ -11,3 +11,4 @@ data/*.pcap
 data/*.csv
 models/*.joblib
 models/*.json
+caveman/

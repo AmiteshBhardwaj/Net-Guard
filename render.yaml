@@ -9,3 +9,16 @@ services:
     envVars:
       - key: NETGUARD_CAPTURE_MODE
         value: agent
+      # Set this to your Supabase PostgreSQL connection string in the Render dashboard.
+      # Without it the service falls back to ephemeral SQLite (data lost on redeploy).
+      - key: NETGUARD_DATABASE_URL
+        sync: false
+      # Populate this with your Render service URL to enable the keep-alive ping.
+      - key: NETGUARD_KEEP_ALIVE_URL
+        sync: false
+      # Allowed frontend origins (comma-separated).
+      - key: NETGUARD_CORS_ORIGINS
+        value: https://int-detect.vercel.app
+      # Token the capture agent must send. Generate a long random string.
+      - key: NETGUARD_AGENT_TOKEN
+        sync: false

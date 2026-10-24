@@ -35,8 +35,6 @@ from app.threat_dashboard_api import (
     set_db_provider,
 )
 
-ROOT = Path(__file__).resolve().parent.parent
-MODEL_PATH = ROOT / "models" / "netguard.joblib"
 logger = logging.getLogger("netguard")
 if CAPTURE_MODE not in {"local", "agent"}:
     raise ValueError("NETGUARD_CAPTURE_MODE must be 'local' or 'agent'")
@@ -52,7 +50,7 @@ def load_model() -> Any:
         return None
 
 
-async def _keep_alive_task(target_url: str, interval_seconds: int = 600) -> None:
+async def _keep_alive_task(target_url: str, interval_seconds: int = 420) -> None:
     health_url = f"{target_url.rstrip('/')}/api/health"
     logger.info("Keep-alive task started for %s (interval: %ds)", health_url, interval_seconds)
     await asyncio.sleep(60)
@@ -76,7 +74,10 @@ async def _keep_alive_task(target_url: str, interval_seconds: int = 600) -> None
 
 
 @asynccontextmanager
-async def lifespan(_: FastAPI):
+async def lifespan(application: FastAPI):
+    # Store the running event loop so the Scapy capture thread can schedule coroutines.
+    application.state.loop = asyncio.get_running_loop()
+    application.state.blast_service = BlastService(broadcast, db)
     keep_alive_url = os.getenv("NETGUARD_KEEP_ALIVE_URL") or os.getenv("RENDER_EXTERNAL_URL")
     task = None
     if keep_alive_url and keep_alive_url.strip():
@@ -214,12 +215,6 @@ def on_live_flow(flow: Flow) -> None:
         asyncio.run_coroutine_threadsafe(process_flow(flow), loop)
 
 
-@app.on_event("startup")
-async def startup() -> None:
-    app.state.loop = asyncio.get_running_loop()
-    app.state.blast_service = BlastService(broadcast, db)
-
-
 class AttackRequest(BaseModel):
     target: str = "127.0.0.1"
 
@@ -276,7 +271,14 @@ async def threat_dashboard_page() -> FileResponse:
 
 @app.get("/api/health")
 async def health() -> dict[str, str]:
-    return {"status": "ok", "service": "NetGuard"}
+    db_status = "ok"
+    try:
+        conn = connect_database(DB_PATH)
+        conn.execute("SELECT 1")
+        conn.close()
+    except Exception as exc:
+        db_status = f"unhealthy: {exc}"
+    return {"status": "ok", "service": "NetGuard", "database": db_status}
 
 
 @app.get("/api/stats")
