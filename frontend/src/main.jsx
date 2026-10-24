@@ -6,6 +6,7 @@ import LandingContentMotion from './components/LandingContentMotion.jsx';
 import DashboardTopNav from './components/DashboardTopNav.jsx';
 import DashboardSpecularEffects from './components/DashboardSpecularEffects.jsx';
 import DashboardOverviewKpis from './components/DashboardOverviewKpis.jsx';
+import LandingHero from './components/LandingHero.jsx';
 
 function mount(element, component) {
   if (element) createRoot(element).render(component);
@@ -39,6 +40,11 @@ mount(
     React.createElement(SmoothScrollProvider),
     React.createElement(LandingContentMotion),
   ),
+);
+
+mount(
+  document.querySelector('#landing-root'),
+  React.createElement(LandingHero),
 );
 
 mount(

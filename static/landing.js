@@ -175,17 +175,22 @@
 
   const media = gsap.matchMedia();
   media.add('(prefers-reduced-motion: no-preference)', () => {
+    const titleLines = document.querySelectorAll('.title-line-inner');
     const introItems = document.querySelectorAll('.hero-copy .intro-item');
     const heroVisual = document.querySelector('.hero-visual-motion');
     const intro = gsap.timeline({ defaults: { ease: 'power3.out' } });
-    intro.from('.title-line-inner', {
-      y: 16,
-      autoAlpha: 0,
-      duration: 0.72,
-      stagger: 0.13,
-      clearProps: 'transform,opacity,visibility',
-    }, 0);
-    intro.from(introItems, { autoAlpha: 0, y: 17, duration: 0.62, stagger: 0.09 }, 0.18);
+    if (titleLines.length) {
+      intro.from(titleLines, {
+        y: 16,
+        autoAlpha: 0,
+        duration: 0.72,
+        stagger: 0.13,
+        clearProps: 'transform,opacity,visibility',
+      }, 0);
+    }
+    if (introItems.length) {
+      intro.from(introItems, { autoAlpha: 0, y: 17, duration: 0.62, stagger: 0.09 }, 0.18);
+    }
     if (heroVisual) {
       intro.fromTo(heroVisual,
         { autoAlpha: 0 },
@@ -207,8 +212,6 @@
           ease: 'back.out(1.65)',
           clearProps: 'opacity,visibility,transform',
         }, 0.42);
-      }
-      if (orbitIcons.length) {
         heroIconFloat = gsap.to(orbitIcons, {
           y: -9,
           rotation: 2,
@@ -224,40 +227,120 @@
     const routeFill = document.querySelector('.route-progress span');
     const routeTraveler = document.querySelector('.route-traveler');
     const eventCard = document.querySelector('.visual-event-card');
-    storyTimeline = gsap.timeline({
-      paused: !ScrollTrigger,
-      defaults: { ease: 'none' },
-      scrollTrigger: ScrollTrigger ? {
-        trigger: walkthrough,
-        start: 'top 76%',
-        end: 'bottom 52%',
-        scrub: 0.55,
-        invalidateOnRefresh: true,
-      } : undefined,
-      onUpdate: () => setStoryStage(storyTimeline.progress()),
-    });
-    storyTimeline
-      .to(routeFill, { scaleX: 1, duration: 1 }, 0)
-      .fromTo(routeTraveler,
-        { left: '5%', autoAlpha: 0 },
-        { left: '95%', autoAlpha: 1, duration: 1, ease: 'none' },
-        0
-      )
-      .fromTo(eventCard,
-        { autoAlpha: 0, y: 16 },
-        { autoAlpha: 1, y: 0, duration: 0.18, ease: 'power2.out' },
-        0.76
-      );
-    setStoryStage(0);
+    if (walkthrough && routeFill) {
+      storyTimeline = gsap.timeline({
+        paused: !ScrollTrigger,
+        defaults: { ease: 'none' },
+        scrollTrigger: ScrollTrigger ? {
+          trigger: walkthrough,
+          start: 'top 76%',
+          end: 'bottom 52%',
+          scrub: 0.55,
+          invalidateOnRefresh: true,
+        } : undefined,
+        onUpdate: () => setStoryStage(storyTimeline.progress()),
+      });
+      storyTimeline
+        .to(routeFill, { scaleX: 1, duration: 1 }, 0)
+        .fromTo(routeTraveler,
+          { left: '5%', autoAlpha: 0 },
+          { left: '95%', autoAlpha: 1, duration: 1, ease: 'none' },
+          0
+        )
+        .fromTo(eventCard,
+          { autoAlpha: 0, y: 16 },
+          { autoAlpha: 1, y: 0, duration: 0.18, ease: 'power2.out' },
+          0.76
+        );
+      setStoryStage(0);
+    }
 
     return () => {
       heroIconFloat?.kill();
       intro.kill();
-      storyTimeline.scrollTrigger?.kill();
-      storyTimeline.kill();
+      storyTimeline?.scrollTrigger?.kill();
+      storyTimeline?.kill();
       storyTimeline = null;
     };
   });
 
+  function initMorphingPhotoArc() {
+    const stage = document.querySelector('#hero-arc-stage');
+    if (!stage) return;
+    const cards = Array.from(stage.querySelectorAll('.arc-card'));
+    if (!cards.length) return;
+
+    const total = cards.length;
+    const center = (total - 1) / 2;
+
+    function layoutCards(morphFactor = 0) {
+      const isMobile = window.innerWidth < 768;
+      const radiusX = isMobile ? Math.min(window.innerWidth * 0.44, 280) : Math.min(window.innerWidth * 0.42, 540);
+      const radiusY = isMobile ? 120 : 210;
+      const baseSpread = isMobile ? 0.22 : 0.16;
+      const spread = baseSpread * (1 + morphFactor * 0.48);
+
+      cards.forEach((card, i) => {
+        if (card.dataset.hovered === 'true') return;
+        const offset = i - center;
+        const angle = offset * spread;
+        const x = Math.sin(angle) * radiusX;
+        const y = (1 - Math.cos(angle)) * radiusY;
+        const rotZ = angle * (180 / Math.PI) * 0.72;
+        const zIndex = Math.round(50 - Math.abs(offset));
+
+        card.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0px) rotateZ(${rotZ.toFixed(1)}deg)`;
+        card.style.zIndex = zIndex;
+      });
+    }
+
+    layoutCards(0);
+
+    if (gsap && ScrollTrigger) {
+      ScrollTrigger.create({
+        trigger: '.hero--morphing-arc',
+        start: 'top top',
+        end: 'bottom top',
+        scrub: 0.6,
+        onUpdate: (self) => {
+          layoutCards(self.progress);
+        },
+      });
+    } else {
+      window.addEventListener('scroll', () => {
+        const progress = Math.min(1, Math.max(0, window.scrollY / 600));
+        layoutCards(progress);
+      }, { passive: true });
+    }
+
+    window.addEventListener('resize', () => layoutCards(0), { passive: true });
+
+    cards.forEach((card, i) => {
+      const enter = () => {
+        card.dataset.hovered = 'true';
+        const offset = i - center;
+        const spread = 0.16;
+        const radiusX = Math.min(window.innerWidth * 0.42, 540);
+        const radiusY = 210;
+        const angle = offset * spread;
+        const x = Math.sin(angle) * radiusX;
+        const y = (1 - Math.cos(angle)) * radiusY - 24;
+        card.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 120px) scale(1.14)`;
+        card.style.zIndex = '99';
+      };
+      const leave = () => {
+        delete card.dataset.hovered;
+        layoutCards(0);
+      };
+
+      card.addEventListener('mouseenter', enter);
+      card.addEventListener('mouseleave', leave);
+      card.addEventListener('focus', enter);
+      card.addEventListener('blur', leave);
+    });
+  }
+
+  initMorphingPhotoArc();
   scheduleScrollMotion(window.scrollY);
 })();
+

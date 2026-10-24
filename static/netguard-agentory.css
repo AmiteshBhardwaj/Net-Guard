@@ -534,3 +534,178 @@ body { background: var(--page); }
   .tech-marquee { overflow-x: auto; mask-image: none; }
   .tech-marquee-group[aria-hidden="true"] { display: none; }
 }
+
+/* ==========================================================================
+   Wensity-Style Hero Section With Morphing Photo Arc
+   ========================================================================== */
+.hero--morphing-arc {
+  position: relative;
+  min-height: min(940px, 100vh);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: clamp(64px, 8vw, 100px) clamp(24px, 5vw, 64px) 40px;
+  overflow: hidden;
+  text-align: center;
+}
+.hero-arc-ambient-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 65% 45% at 50% 35%, rgba(255, 100, 45, 0.16), transparent 70%);
+  z-index: 0;
+}
+.hero--morphing-arc .hero-copy {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 820px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.hero--morphing-arc .eyebrow {
+  justify-content: center;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line-strong);
+  background: rgba(18, 18, 20, 0.7);
+  backdrop-filter: blur(8px);
+}
+.hero--morphing-arc .hero-title {
+  text-align: center;
+  margin: 22px 0 18px;
+}
+.hero--morphing-arc .hero-description {
+  max-width: 600px;
+  margin: 0 auto;
+  text-align: center;
+}
+.hero--morphing-arc .hero-actions {
+  justify-content: center;
+  margin-top: 28px;
+}
+.hero--morphing-arc .hero-annotation {
+  justify-content: center;
+  margin-top: 24px;
+}
+
+/* Arc Stage & Cards */
+.hero-arc-stage-container {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 1300px;
+  height: 480px;
+  margin-top: 36px;
+  perspective: 1400px;
+  perspective-origin: center 50%;
+  overflow: visible;
+  touch-action: pan-y;
+}
+.hero-arc-stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.arc-card {
+  position: absolute;
+  width: clamp(140px, 15vw, 190px);
+  height: clamp(200px, 22vw, 270px);
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #141416;
+  box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 100, 45, 0.08);
+  cursor: pointer;
+  outline: none;
+  transform-origin: center bottom;
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  user-select: none;
+}
+.arc-card:focus-visible {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 3px rgba(255, 100, 45, 0.4), 0 20px 40px rgba(0, 0, 0, 0.8);
+}
+.arc-card:hover {
+  border-color: rgba(255, 100, 45, 0.5);
+  box-shadow: 0 24px 48px -12px rgba(255, 100, 45, 0.25), 0 0 0 1px var(--orange);
+}
+.arc-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+.arc-card-inner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.arc-card:hover .arc-card-inner img {
+  transform: scale(1.08);
+}
+.arc-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(11, 11, 13, 0.1) 0%, rgba(11, 11, 13, 0.3) 45%, rgba(11, 11, 13, 0.95) 100%);
+  pointer-events: none;
+}
+.arc-card-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(11, 11, 13, 0.75);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--orange);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.arc-card-meta {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  pointer-events: none;
+}
+.arc-card-meta strong {
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.arc-card-meta span {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+@media (max-width: 768px) {
+  .hero-arc-stage-container {
+    height: 380px;
+    margin-top: 24px;
+  }
+}

@@ -13,4 +13,5 @@ services:
       - PORT=8000
     volumes:
       - ./data:/app/data
+      - ./static:/app/static
     restart: unless-stopped
