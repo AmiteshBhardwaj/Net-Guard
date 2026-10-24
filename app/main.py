@@ -255,10 +255,14 @@ class AgentFlowBatch(BaseModel):
 
 
 @app.get("/")
-@app.get("/dashboard")
 @app.get("/landing")
+async def landing_page(request: Request) -> FileResponse:
+    return FileResponse(ROOT / "static" / "landing.html")
+
+
+@app.get("/dashboard")
 @app.get("/threat-dashboard")
-async def single_page_app(request: Request) -> FileResponse:
+async def dashboard_page(request: Request) -> FileResponse:
     return FileResponse(ROOT / "static" / "index.html")
 
 

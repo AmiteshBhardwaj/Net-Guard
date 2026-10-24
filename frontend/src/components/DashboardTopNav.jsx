@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import GooeyNav from './GooeyNav.jsx';
 
 const items = [
-  { label: 'Intro', href: '#landing', id: 'landing' },
   { label: 'Overview', href: '#overview', id: 'overview' },
   { label: 'Activity', href: '#threat-overview', id: 'threat-overview' },
   { label: 'Alerts', href: '#incident-lab', id: 'incident-lab' },
