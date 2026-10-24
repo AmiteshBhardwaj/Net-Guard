@@ -283,7 +283,13 @@ async def health() -> dict[str, str]:
 async def stats() -> dict[str, Any]:
     now = time.time()
     with state_lock:
-        recent_packets = round(sum(count for second, count in state["packet_seconds"].items() if int(now) - second <= 1) / 2)
+        counts = state["packet_seconds"]
+        current_second = int(now)
+        packet_history = [
+            round((counts.get(second - 1, 0) + counts.get(second, 0)) / 2)
+            for second in range(current_second - 59, current_second + 1)
+        ]
+        recent_packets = packet_history[-1]
         source = state["source"]
         interface = state["interface"]
         flows_processed = state["flows_processed"]
@@ -295,6 +301,7 @@ async def stats() -> dict[str, Any]:
         types = conn.execute("SELECT label, COUNT(*) AS count FROM alerts GROUP BY label").fetchall()
     return {
         "source": source, "interface": interface, "packets_per_second": recent_packets,
+        "packet_history": packet_history,
         "flows_processed": flows_processed, "alerts": alerts, "blocked_ips": blocked_count,
         "attacks_launched": launched, "attacks_detected": detected,
         "detection_rate": round(detected / launched, 3) if launched else None,

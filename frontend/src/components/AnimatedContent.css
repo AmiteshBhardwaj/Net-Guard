@@ -1,0 +1,10 @@
+.animated-content {
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animated-content {
+    will-change: auto;
+  }
+}

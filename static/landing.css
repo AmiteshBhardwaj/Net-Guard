@@ -85,9 +85,16 @@ svg { display: block; }
 .hero .button-primary:hover { background: #b1b8ff; }
 .hero .button-quiet { color: #d5d7e3; }
 .hero .button-quiet:hover { color: #aeb5ff; }
+.hero-grainient { position: absolute; z-index: 0; inset: 4% 5%; overflow: hidden; border-radius: 50%; opacity: .78; pointer-events: none; }
+.hero-grainient > .grainient-container { width: 100%; height: 100%; }
+.hero-earth { position: relative; z-index: 1; }
 .hero-annotation { display: flex; max-width: 460px; align-items: flex-start; gap: 10px; margin-top: 62px; color: #a0a5b8; }
 .annotation-mark { display: grid; width: 17px; height: 17px; flex: 0 0 17px; place-items: center; border: 1px solid #73788f; border-radius: 50%; font-family: var(--mono); font-size: 10px; }
 .hero-annotation p { margin: -1px 0 0; font-size: 11px; line-height: 1.55; }
+.contact-particles { position: absolute; z-index: 0; inset: 0; overflow: hidden; pointer-events: none; }
+.contact-section { position: relative; isolation: isolate; overflow: hidden; }
+.contact-particles > .particles-container { width: 100%; height: 100%; }
+.contact-section > div:not(.contact-particles) { position: relative; z-index: 1; }
 
 .walkthrough-visual-grid, .closing-cta-grid { position: absolute; inset: 0; background-image: linear-gradient(#f4f5ff0a 1px, transparent 1px), linear-gradient(90deg, #f4f5ff0a 1px, transparent 1px); background-size: 44px 44px; mask-image: linear-gradient(180deg, #000 0%, #0009 72%, transparent 100%); pointer-events: none; }
 .workflow-section, .capabilities-section, .inputs-section, .requirements-section, .closing-cta, .site-footer { width: calc(100% - clamp(32px, 6vw, 112px)); margin-inline: auto; }
@@ -100,7 +107,10 @@ svg { display: block; }
 .workflow-heading { margin-bottom: 47px; }
 .walkthrough { display: grid; grid-template-columns: minmax(0, 1fr) minmax(390px, .93fr); gap: 12px; }
 .walkthrough-visual { position: relative; min-height: 530px; overflow: hidden; border-radius: 12px; background: #202439; color: #f4f5fc; }
-.walkthrough-visual-grid { background-size: 34px 34px; mask-image: linear-gradient(180deg, #000 10%, transparent 100%); }
+.walkthrough-webthreads { position: absolute; z-index: 0; inset: 0; opacity: .72; pointer-events: none; }
+.walkthrough-webthreads > .web-threads-container { width: 100%; height: 100%; }
+.walkthrough-visual-grid { z-index: 1; background-size: 34px 34px; mask-image: linear-gradient(180deg, #000 10%, transparent 100%); }
+.route-graphic, .visual-event-card { z-index: 2; }
 .route-graphic { position: absolute; top: 43%; left: 11%; display: flex; width: 78%; align-items: center; justify-content: space-between; }
 .route-progress { position: absolute; z-index: 0; top: 50%; right: 5%; left: 5%; height: 2px; overflow: hidden; background: #888eff27; transform: translateY(-50%); }
 .route-progress span { display: block; width: 100%; height: 100%; background: linear-gradient(90deg, #ff9475 0%, #8c95ff 55%, #8bdbaa 100%); transform: scaleX(0); transform-origin: left center; }

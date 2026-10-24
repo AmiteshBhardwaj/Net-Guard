@@ -631,6 +631,159 @@ html[data-threat-state="contained"] .live-indicator { color: var(--green); }
   padding: 14px;
 }
 
+/* Warm, quieter dashboard theme aligned with the NetGuard landing page. */
+html, body { background: #0b0b0d !important; color: #f2f0ee; }
+body {
+  background-image: none !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+.sidebar {
+  width: 218px;
+  background: #0b0b0d;
+  border-color: #292725;
+}
+.brand, .nav-item, .user-chip, .secure-card strong { color: #f2f0ee; }
+.brand { padding-bottom: 32px; letter-spacing: .04em; }
+.brand small, .side-label, .secure-card p, .user-chip small { color: #898583; }
+.brand-mark { color: #fff; background: #ff642d; box-shadow: none; }
+.nav-item { min-height: 38px; height: auto; margin-bottom: 3px; border-radius: 5px; color: #c2bfbd; }
+.nav-item:hover { color: #f2f0ee; background: #19191b; }
+.nav-item.active { color: #f2f0ee; background: #19191b; box-shadow: inset 2px 0 #ff642d; }
+.nav-icon { color: #ff8252; }
+.nav-count { color: #c2bfbd; background: #19191b; }
+.nav-tools { margin-top: 10px; border-top: 1px solid #292725; padding-top: 8px; }
+.nav-tools summary {
+  display: flex; align-items: center; justify-content: space-between; min-height: 38px;
+  padding: 0 11px; color: #898583; cursor: pointer; font-size: 12px; list-style: none;
+}
+.nav-tools summary::-webkit-details-marker { display: none; }
+.nav-tools summary::after { content: "+"; color: #898583; font: 16px/1 "SFMono-Regular", Consolas, monospace; }
+.nav-tools[open] summary::after { content: "−"; }
+.nav-tools .side-label { padding: 9px 11px 5px; }
+.secure-card { border-color: #292725; border-radius: 6px; background: #121214; }
+.secure-icon { color: #ff642d; background: transparent; }
+.online-dot { background: #9eb79a; box-shadow: none; }
+.avatar { color: #f2f0ee; background: #292725; }
+.main-content { margin-left: 218px; padding: 0 30px 18px; }
+.topbar { border-color: #292725; }
+.topbar::after { display: none; }
+.breadcrumb, .top-actions { color: #898583; font-family: var(--mono); }
+.breadcrumb span { color: #898583; }
+.breadcrumb strong { color: #c2bfbd; }
+.search-box { border-color: #45413e; border-radius: 5px; background: #121214; color: #898583; }
+.search-box input { color: #f2f0ee; font-family: inherit; }
+.search-box input::placeholder { color: #898583; }
+.live-indicator { color: #c2bfbd; }
+.live-indicator i, .feed-live i, .footer i { background: #9eb79a; box-shadow: none; }
+.page-heading { padding: 28px 0 18px; }
+.eyebrow { color: #898583; font-family: inherit; font-size: 10px; letter-spacing: .1em; }
+.eyebrow-line { background: #ff642d; opacity: .75; }
+h1 { color: #f2f0ee; font: 650 34px/1.16 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: -1.4px; }
+.title-period { color: #ff642d; }
+.page-heading p { color: #898583; font-size: 13px; }
+.icon-button, .presenter-toggle { border-color: #45413e; color: #c2bfbd; background: #121214; }
+.stream-toggle, #refresh-button, #export-button, #presenter-toggle, .workspace-toolbar, .footer { display: none !important; }
+.top-inject-button {
+  min-height: 38px; align-self: center; padding: 0 15px; border: 1px solid #ff642d; border-radius: 5px;
+  color: #fff; background: #ff642d; font: 600 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  cursor: pointer; box-shadow: none;
+}
+.top-inject-button:hover { border-color: #ff8252; color: #fff; background: #e95725; }
+.notice-bar { border-color: #45413e; border-radius: 5px; background: #121214; color: #c2bfbd; }
+.notice-bar strong, .notice-symbol { color: #ff8252; }
+.notice-symbol { border-color: #45413e; border-radius: 50%; }
+.kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 12px; }
+.kpi-card[data-kpi="engine"] { display: none; }
+.kpi-card, .panel {
+  border: 1px solid #292725; border-radius: 7px; background: #121214; box-shadow: none;
+}
+.kpi-card { min-height: 106px; padding: 16px; animation: none; }
+.kpi-card::after { display: none; }
+.kpi-top { color: #898583; font-family: var(--mono); font-size: 9px; letter-spacing: .06em; }
+.kpi-icon { border-radius: 4px; }
+.kpi-icon.blue { color: #ff8252; background: #2b1912; }
+.kpi-icon.violet { color: #bb9d88; background: #29211c; }
+.kpi-icon.coral { color: #d78376; background: #2a1c1a; }
+.kpi-icon.mint { color: #9eb79a; background: #1b211a; }
+.kpi-value { color: #f2f0ee; font-size: 30px; font-weight: 600; }
+.subtle { color: #898583; }
+.kpi-tag, .risk-label, .small-badge, .elapsed-badge, .engine-live, .terminal-state { border-color: #292725; color: #898583; }
+.risk-label, .title-period, .engine-live { color: #ff8252; }
+.threat-kpi.has-threats { border-color: #70463c; }
+.threat-kpi.has-threats .kpi-value { color: #d78376; }
+.dashboard-grid { grid-template-columns: minmax(0, 1fr) minmax(270px, 310px); gap: 14px; }
+.center-column, .dashboard-view { gap: 12px; }
+.dashboard-view.is-active { animation: none; }
+.overview-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.overview-grid .tactics-panel, .overview-lower-grid { display: none; }
+.panel { padding: 17px; }
+.panel-title { color: #f2f0ee; font-size: 13px; font-weight: 600; }
+.panel-subtitle { color: #898583; font-size: 11px; }
+.traffic-panel { height: 292px; }
+.chart-legend, .axis-labels, .chart-time { color: #898583; }
+.legend-normal { background: #ff642d; }
+.legend-threat { background: #d78376; }
+.chart-sweep { display: none; }
+.alerts-panel { position: sticky; top: 14px; height: auto; max-height: calc(100vh - 260px); min-height: 0; overflow: hidden; padding: 17px; }
+.feed-live { border-color: #343c32; color: #9eb79a; background: #191d18; }
+.notification-summary strong { color: #f2f0ee; }
+.alert-list { height: min(39vh, 320px); min-height: 0; }
+.notification-skeleton, .alert-row { border-color: #292725; }
+.notification-skeleton i, .notification-skeleton span { background: #19191b; }
+.notification-skeleton span::after { display: none; }
+.alert-kind { color: #f2f0ee; font-size: 11px; }
+.alert-reason { color: #c2bfbd; font-size: 10px; }
+.alert-meta, .alert-time { color: #898583; }
+.severity { color: #c9a477; border-color: #4f4334; background: transparent; }
+.severity.high, .severity.critical { color: #d78376; border-color: #5a3732; }
+.severity.low, .severity.info { color: #ff8252; border-color: #5a3425; }
+.alert-stripe { background: #c9a477; }
+.alert-stripe.high, .alert-stripe.critical { background: #d78376; }
+.alert-stripe.low, .alert-stripe.info { background: #ff642d; }
+.block-button { border-color: #45413e; border-radius: 4px; color: #c2bfbd; background: transparent; }
+.blocked-tag, .shield-icon { color: #9eb79a; }
+.empty-state { color: #898583; }
+.empty-state > span { color: #ff8252; }
+.empty-state strong { color: #c2bfbd; }
+.panel-footer { color: #898583; }
+.text-button { color: #c2bfbd; }
+.activity-section, .endpoint-section, .sidebar-footer { display: none; }
+.engine-live i { background: #9eb79a; }
+.overview-engine .model-note { color: #898583; }
+.terminal-window, .target-input, .capture-panel select { border-color: #292725; background: #0f0f10; color: #c2bfbd; }
+.attack-button, .source-control, .blast-summary-card, .map-loading, .endpoint-card { border-color: #292725; background: #19191b; }
+.attack-button { border-radius: 5px; }
+.attack-button:hover, .source-control:hover { border-color: #45413e; }
+.attack-icon { color: #ff8252; background: #2b1912; }
+.attack-icon.scan { color: #c9a477; background: #272117; }
+.attack-icon.brute { color: #bb9d88; background: #29211c; }
+.attack-icon.dos { color: #d78376; background: #2a1c1a; }
+.upload-button, .capture-toggle, .recommend-card button { border-color: #45413e; border-radius: 4px; color: #ff8252; background: #19191b; }
+.capture-toggle { color: #9eb79a; }
+.capture-toggle.active { color: #d78376; }
+.toast { border-color: #45413e; border-radius: 5px; background: #19191b; color: #f2f0ee; box-shadow: none; }
+.incident-drawer, .drawer-content { border-color: #292725; background: #121214; color: #f2f0ee; }
+.drawer-backdrop { background: rgba(0, 0, 0, .62); }
+
+@media (max-width: 1120px) {
+  .dashboard-grid { grid-template-columns: minmax(0, 1fr); }
+  .alerts-panel { position: static; }
+}
+@media (max-width: 760px) {
+  .main-content { margin-left: 58px; padding-inline: 16px; }
+  .alerts-panel { max-height: none; }
+  .alert-list { height: min(45vh, 320px); }
+  .page-heading { align-items: flex-start; gap: 16px; }
+  .top-inject-button { flex: 0 0 auto; }
+  .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .traffic-panel { height: 270px; }
+}
+@media (max-width: 500px) {
+  .main-content { padding-inline: 11px; }
+  .page-heading { flex-direction: column; }
+  .top-inject-button { align-self: flex-start; }
+}
+
 .blast-grid {
   display: grid;
   grid-template-columns: minmax(0, 2.2fr) minmax(200px, 0.8fr);

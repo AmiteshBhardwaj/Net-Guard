@@ -3,105 +3,61 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#07111a">
+  <meta name="theme-color" content="#0b0b0d">
   <title>NetGuard — Network Threat Monitor</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css">
-  <link rel="stylesheet" href="/static/tokens.css">
-  <link rel="stylesheet" href="/static/redesign.css">
+  <link rel="stylesheet" href="/static/dashboard-workspace.css?v=9">
+  <link rel="stylesheet" href="/static/landing-assets/landing.css?v=15">
 </head>
-<body>
+<body data-dashboard="overview">
   <div class="app-shell">
-    <aside class="sidebar">
-      <a class="brand" href="#overview"><span class="brand-mark">N</span><span>NETGUARD<small>NETWORK DEFENSE</small></span></a>
-      <div class="side-label">FAVORITES</div>
-      <a class="nav-item active" href="#overview" data-dashboard-link="overview"><span class="nav-icon">⌂</span>Overview</a>
-      <a class="nav-item" href="#incident-lab" data-dashboard-link="incident-lab"><span class="nav-icon">◎</span>Incident Lab<span class="nav-count" id="side-alert-count">0</span></a>
-      <div class="side-label nav-section">DASHBOARDS</div>
-      <a class="nav-item" href="#threat-overview" data-dashboard-link="threat-overview"><span class="nav-icon">◈</span>Threat Overview</a>
-      <a class="nav-item" href="#isolation-forest" data-dashboard-link="isolation-forest"><span class="nav-icon">◉</span>Isolation Forest</a>
-      <a class="nav-item" href="#attack-lab" data-dashboard-link="attack-lab"><span class="nav-icon">⌁</span>Attack Lab</a>
-      <a class="nav-item" href="#blast-radius" data-dashboard-link="blast-radius"><span class="nav-icon">◌</span>Blast Radius</a>
-      <div class="side-label nav-section">TRAFFIC SOURCES</div>
-      <a class="nav-item" href="#demo-ingress" data-dashboard-link="demo-ingress"><span class="nav-icon">⌁</span>Demo Ingress</a>
-      <a class="nav-item" href="#live-sniffer" data-dashboard-link="live-sniffer"><span class="nav-icon">◉</span>Live Sniffer</a>
-      <div class="sidebar-bottom">
-        <div class="secure-card"><span class="secure-icon">⌑</span><strong>SAFE LAB MODE</strong><p>Simulations create labeled local telemetry. No traffic is sent to external hosts.</p></div>
-        <div class="user-chip"><span class="avatar">NG</span><span>Local operator<small>Administrator</small></span><span class="online-dot"></span></div>
-      </div>
-    </aside>
-
     <main class="main-content" id="overview">
       <header class="topbar">
-        <div class="breadcrumb"><span>Dashboards</span> / <strong id="breadcrumb-page">Overview</strong></div>
-        <div class="top-actions">
-          <label class="search-box" for="dashboard-search"><span>⌕</span><input id="dashboard-search" type="search" placeholder="Search IP, port, or tactic"></label>
-          <span class="live-indicator"><i></i><span id="connection-label">CONNECTING</span></span>
-          <button class="icon-button" id="refresh-button" type="button" title="Refresh dashboard" aria-label="Refresh dashboard">↻</button>
-          <button class="stream-toggle" id="stream-toggle" type="button"><i></i>Start stream</button>
-          <button class="top-inject-button" id="inject-button" type="button">⚡ Inject anomaly</button>
-          <button class="icon-button" id="export-button" title="Export alert feed" aria-label="Export alert feed">↓</button>
-          <button class="presenter-toggle" id="presenter-toggle" type="button" aria-pressed="false"><span>▣</span><kbd>P</kbd></button>
-        </div>
+        <a class="brand dashboard-brand" href="#overview" aria-label="NetGuard overview"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span class="dashboard-brand__copy"><span>netguard<span class="brand-period">.</span></span><small>NETWORK MONITOR</small></span></a>
+        <div class="dashboard-nav-host" id="dashboard-nav-root"></div>
+        <span class="visually-hidden" id="breadcrumb-page">Overview</span>
       </header>
 
       <section class="page-heading">
-        <div><div class="eyebrow">NETWORK OPERATIONS CENTER <span class="eyebrow-line"></span></div><h1 id="dashboard-title">Overview<span class="title-period">.</span></h1><p id="dashboard-description">Network activity and threat detections across monitored traffic.</p></div>
+        <div><div class="eyebrow">Network overview</div><h1 id="dashboard-title">Overview</h1><p id="dashboard-description">See network activity and recent alerts.</p></div>
+        <button class="top-inject-button" id="inject-button" type="button" data-specular><span aria-hidden="true">＋</span> Create sample alert</button>
       </section>
 
-      <div class="workspace-toolbar">
-        <span class="toolbar-date" id="clock">Today</span>
-        <div class="toolbar-controls">
-          <label class="speed-control">Speed: <select id="replay-speed" aria-label="Traffic or replay speed"><option value="1">1.0s (Normal)</option><option value="2">2.0s</option><option value="5">5.0s</option><option value="10">10.0s</option></select></label>
-          <button class="quick-sim-button" data-attack="portscan">Simulate PortScan</button>
-          <button class="quick-sim-button" data-attack="bruteforce">Simulate BruteForce</button>
-          <button class="quick-sim-button" data-attack="dos">Simulate DoS</button>
-        </div>
-      </div>
-
-      <div class="notice-bar" id="source-notice"><span class="notice-symbol">i</span><span><strong>LAB SIMULATION</strong> — demo launches feed labeled simulated flows into the detector. They are not captured network packets.</span><button id="notice-dismiss" aria-label="Dismiss">×</button></div>
+      <div class="notice-bar" id="source-notice"><span><strong>Demo data</strong>Sample activity stays on this machine. No packets leave it.</span><button id="notice-dismiss" aria-label="Dismiss">×</button></div>
 
       <div class="dashboard-grid">
         <div class="center-column">
           <section class="dashboard-view is-active" data-dashboard="overview" aria-label="Overview dashboard">
-            <section class="kpi-grid" aria-label="Network metrics">
-              <article class="kpi-card" data-kpi="pps"><div class="kpi-top"><span>FLOWS PROCESSED</span><span class="kpi-icon blue">⌁</span></div><div class="kpi-value" id="kpi-pps">0</div><div class="kpi-foot"><span class="subtle">Current rate <b id="kpi-rate">0</b> packets/sec</span><span class="kpi-tag">INGRESS</span></div></article>
-              <article class="kpi-card threat-kpi" data-kpi="alerts"><div class="kpi-top"><span>THREATS DETECTED</span><span class="kpi-icon coral">◎</span></div><div class="kpi-value" id="kpi-alerts">0</div><div class="kpi-foot"><span class="subtle">Rule + model detections</span><span class="risk-label"><i></i><span id="threat-label">MONITORING</span></span></div></article>
-              <article class="kpi-card" data-kpi="blocked"><div class="kpi-top"><span>LOCAL BLOCKLIST</span><span class="kpi-icon mint">⊘</span></div><div class="kpi-value" id="kpi-blocked">0</div><div class="kpi-foot"><span class="subtle">Application-level only</span><span class="kpi-tag">LOCAL ONLY</span></div></article>
-              <article class="kpi-card" data-kpi="engine"><div class="kpi-top"><span>DETECTION ENGINE</span><span class="kpi-icon violet">◉</span></div><div class="engine-kpi"><strong id="engine-kpi-name">Rules</strong><span id="engine-kpi-confidence">ACTIVE</span></div><div class="kpi-foot"><span class="subtle" id="engine-kpi-caption">Isolation Forest status</span><span class="kpi-tag">ENGINE</span></div></article>
-            </section>
+            <div id="overview-kpi-root" aria-label="Network metrics"></div>
             <div class="overview-grid">
               <section class="panel traffic-panel">
-                <div class="panel-heading"><div><div class="panel-title">Total ingress & outlier telemetry</div><div class="panel-subtitle">Packets/sec · anomalies highlighted in red</div></div><div class="chart-legend"><span><i class="legend-normal"></i>Ingress</span><span><i class="legend-threat"></i>Outlier</span></div></div>
-                <div class="chart-wrap"><div class="axis-labels"><span>120</span><span>80</span><span>40</span><span>0</span></div><canvas id="traffic-chart" aria-label="Live packets per second chart"></canvas><div class="chart-sweep"></div><div class="chart-pin" id="chart-pin"></div></div>
+                <div class="panel-heading"><div><div class="panel-title">Network activity</div><div class="panel-subtitle">Packets per second over the last <span id="chart-window-label">60 seconds</span></div></div><div class="chart-tools"><div class="chart-legend"><span><i class="legend-normal"></i>Traffic</span><span><i class="legend-threat"></i>Alert</span></div><div class="range-switch" id="chart-window-controls" role="group" aria-label="Chart time window"><button type="button" data-chart-window="15" aria-pressed="false">15s</button><button type="button" data-chart-window="30" aria-pressed="false">30s</button><button type="button" data-chart-window="60" aria-pressed="true">60s</button></div></div></div>
+                <div class="chart-wrap"><div class="axis-labels"><span>120</span><span>80</span><span>40</span><span>0</span></div><canvas id="traffic-chart" aria-label="Live packets per second chart"></canvas><div class="chart-empty" id="chart-empty">No packet activity recorded yet.<br>Choose “Create sample alert” to add local activity.</div><div class="chart-tooltip" id="chart-tooltip" role="status"></div><div class="chart-sweep"></div><div class="chart-pin" id="chart-pin"></div></div>
                 <div class="chart-time"><span>−60s</span><span>−45s</span><span>−30s</span><span>−15s</span><span>NOW</span></div>
               </section>
               <section class="panel tactics-panel">
-                <div class="panel-heading"><div><div class="panel-title">Threats by attack tactic</div><div class="panel-subtitle">Detected vector distribution</div></div><span class="small-badge">ALL VECTORS</span></div>
+                <div class="panel-heading"><div><div class="panel-title">Alert categories</div><div class="panel-subtitle">Alerts grouped by type</div></div><a class="panel-link" href="#threat-overview" data-dashboard-link="threat-overview">View activity <span>↗</span></a></div>
                 <div class="tactic-bars" id="type-bars"><div class="skeleton-line"></div><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
               </section>
             </div>
             <div class="overview-lower-grid">
-              <section class="panel protocol-panel"><div class="panel-heading"><div><div class="panel-title">Telemetry provenance</div><div class="panel-subtitle">Source status from the active pipeline</div></div><span class="small-badge" id="overview-source">LAB SIMULATION</span></div><div class="provenance-note" id="overview-telemetry">Flow and packet-rate values are supplied by the existing stats endpoint. Protocol breakdown is not available.</div></section>
-              <section class="panel overview-engine"><div class="panel-heading"><div><div class="panel-title">Detection engine status</div><div class="panel-subtitle">Model activity at a glance</div></div><span class="engine-live"><i></i> ACTIVE</span></div><div class="engine-overview-value" id="overview-engine-status">Rules active</div><div class="model-note">Open Isolation Forest for confidence, evaluation metrics, and anomaly score detail.</div></section>
+              <section class="panel protocol-panel"><div class="panel-heading"><div><div class="panel-title">Traffic source</div><div class="panel-subtitle">Where activity comes from</div></div><span class="small-badge" id="overview-source">Demo</span></div><div class="provenance-note" id="overview-telemetry">Traffic and packet rates come from the selected source.</div></section>
+              <section class="panel overview-engine"><div class="panel-heading"><div><div class="panel-title">Detection status</div><div class="panel-subtitle">Current checks</div></div><span class="engine-live"><i></i> Active</span></div><div class="engine-overview-value" id="overview-engine-status">Rules are active</div><a class="panel-link" href="#isolation-forest" data-dashboard-link="isolation-forest">View detection details <span>↗</span></a></section>
             </div>
           </section>
 
           <section class="dashboard-view" data-dashboard="incident-lab" aria-label="Incident response dashboard" hidden>
             <div class="incident-summary" id="incident-summary" hidden><div class="summary-kicker"><i></i> INCIDENT CONTAINED</div><h2>Attack neutralized</h2><div class="summary-grid"><span>ATTACK TYPE</span><strong id="summary-attack">—</strong><span>SOURCE IP</span><strong id="summary-source" class="mono">—</strong><span>TIME TO DETECT</span><strong id="summary-detect">—</strong><span>TIME TO BLOCK</span><strong id="summary-block">—</strong><span>PACKETS DROPPED</span><strong id="summary-dropped">—</strong></div></div>
             <div class="secondary-grid response-grid">
-              <section class="panel timeline-panel"><div class="panel-heading"><div><div class="panel-title">Autonomous response</div><div class="panel-subtitle">Detection-to-containment sequence</div></div><span class="elapsed-badge" id="response-elapsed">STANDBY</span></div><ol class="response-steps" id="response-steps"><li class="response-idle">Awaiting a detection event</li></ol></section>
-              <section class="panel network-panel"><div class="panel-heading"><div><div class="panel-title">Network map</div><div class="panel-subtitle">Illustrative monitored topology</div></div><span class="small-badge">3 NODES</span></div><div class="network-map" id="network-map"><svg viewBox="0 0 420 150" preserveAspectRatio="none" aria-label="Illustrative network topology"><path class="network-edge" d="M74 75 H210 H346"/><path class="network-edge secondary-edge" d="M210 75 V126 H346"/></svg><div class="network-node gateway" data-node="gateway"><i></i><strong>Border Gateway</strong><small>EDGE · 10.0.0.1</small></div><div class="network-node dmz" data-node="dmz"><i></i><strong>DMZ Server</strong><small>TARGET · 10.0.2.14</small></div><div class="network-node core" data-node="core"><i></i><strong>Core Node</strong><small>INTERNAL · 10.0.1.8</small></div><span class="network-packet"></span><span class="network-break">×</span><span class="attacker-blocked-x">×</span></div><div class="endpoint-status"><span class="endpoint-dot"></span><span>Monitored endpoints</span><strong id="endpoint-label">3 HEALTHY</strong></div></section>
+              <section class="panel timeline-panel"><div class="panel-heading"><div><div class="panel-title">Response steps</div><div class="panel-subtitle">Actions taken after detection</div></div><span class="elapsed-badge" id="response-elapsed">STANDBY</span></div><ol class="response-steps" id="response-steps"><li class="response-idle">Waiting for a detection</li></ol></section>
+              <section class="panel network-panel"><div class="panel-heading"><div><div class="panel-title">Network path</div><div class="panel-subtitle">Three monitored endpoints</div></div><span class="small-badge">3 ENDPOINTS</span></div><div class="network-map" id="network-map"><svg viewBox="0 0 420 150" preserveAspectRatio="none" aria-label="Illustrative network topology"><path class="network-edge" d="M74 75 H210 H346"/><path class="network-edge secondary-edge" d="M210 75 V126 H346"/></svg><div class="network-node gateway" data-node="gateway"><i></i><strong>Border gateway</strong><small>EDGE · 10.0.0.1</small></div><div class="network-node dmz" data-node="dmz"><i></i><strong>DMZ server</strong><small>TARGET · 10.0.2.14</small></div><div class="network-node core" data-node="core"><i></i><strong>Core node</strong><small>INTERNAL · 10.0.1.8</small></div><span class="network-packet"></span><span class="network-break">×</span><span class="attacker-blocked-x">×</span></div><div class="endpoint-status"><span class="endpoint-dot"></span><span>Monitored endpoints</span><strong id="endpoint-label">3 HEALTHY</strong></div></section>
             </div>
-            <section class="panel terminal-panel"><div class="panel-heading"><div><div class="panel-title">Live attack feed</div><div class="panel-subtitle">Event stream · latest first</div></div><span class="terminal-state"><i></i> TAILING</span></div><div class="terminal-window" id="attack-log" role="log" aria-live="polite"><div class="terminal-line system-line"><span>SYS</span> NetGuard telemetry initialized<span class="terminal-cursor">▋</span></div></div></section>
-            <div class="recommend-card incident-recommend" id="recommend-card" hidden><div class="recommend-mark">✓</div><div><strong>Recommended actions ready</strong><p>Review the source, affected endpoint, and ordered remediation steps.</p></div><button id="open-actions" type="button">Review actions</button></div>
+            <section class="panel terminal-panel"><div class="panel-heading"><div><div class="panel-title">Recent activity</div><div class="panel-subtitle">Detection and response details</div></div><span class="terminal-state"><i></i> LIVE</span></div><div class="terminal-window" id="attack-log" role="log" aria-live="polite"><div class="terminal-line system-line"><span>SYS</span> NetGuard telemetry initialized<span class="terminal-cursor">▋</span></div></div></section>
+              <div class="recommend-card incident-recommend" id="recommend-card" hidden><div class="recommend-mark">✓</div><div><strong>Recommended actions ready</strong><p>Review the source, affected endpoint, and ordered remediation steps.</p></div><button id="open-actions" type="button" data-specular>Review actions</button></div>
           </section>
 
           <section class="dashboard-view" data-dashboard="isolation-forest" aria-label="Isolation Forest dashboard" hidden>
             <section class="panel model-panel">
-              <div class="panel-heading"><div><div class="panel-title">Isolation Forest detection engine</div><div class="panel-subtitle">Live confidence and offline validation metrics</div></div><span class="small-badge">ENGINE STATUS</span></div>
+              <div class="panel-heading"><div><div class="panel-title">Detection model</div><div class="panel-subtitle">Active checks and evaluation results</div></div><span class="small-badge">STATUS</span></div>
               <div class="engine-body"><div class="gauge" id="anomaly-gauge"><svg viewBox="0 0 120 74" aria-hidden="true"><path class="gauge-track" d="M 14 64 A 46 46 0 0 1 106 64"/><path class="gauge-progress" id="gauge-arc" d="M 14 64 A 46 46 0 0 1 106 64"/></svg><span class="gauge-needle" id="gauge-needle"></span><span class="gauge-value" id="gauge-value">0.00</span><small>ANOMALY SCORE</small></div><div class="engine-details"><span class="model-status"><i class="model-status-dot" id="model-dot"></i><span id="model-status">Rules active · model not trained</span></span><div class="metric-grid"><div class="metric"><span>PRECISION</span><strong id="metric-precision">—</strong></div><div class="metric"><span>RECALL</span><strong id="metric-recall">—</strong></div><div class="metric"><span>F1 SCORE</span><strong id="metric-f1">—</strong></div><div class="metric"><span>FALSE ALARM</span><strong id="metric-far">—</strong></div></div></div></div>
               <p class="model-note" id="model-note">Rules active. Metrics appear when an offline evaluation report is available.</p>
             </section>
@@ -110,18 +66,19 @@
 
           <section class="dashboard-view" data-dashboard="attack-lab" aria-label="Attack lab dashboard" hidden>
             <section class="panel lab-panel" id="lab">
-              <div class="panel-heading"><div><div class="panel-title">Attack lab</div><div class="panel-subtitle">Generate bounded, labeled local demo telemetry</div></div><span class="lab-badge"><i></i> PRIVATE LAB</span></div>
-              <div class="lab-target"><label for="target-ip">LAB TARGET</label><div class="target-input"><span>⌖</span><input id="target-ip" value="127.0.0.1" spellcheck="false"><span class="target-lock">▣</span></div><span class="target-hint">Loopback or RFC1918 addresses only</span></div>
+              <div class="panel-heading"><div><div class="panel-title">Local test</div><div class="panel-subtitle">Create sample traffic to check detection</div></div><span class="lab-badge"><i></i> LOCAL ONLY</span></div>
+              <div class="lab-target"><label for="target-ip">TEST ADDRESS</label><div class="target-input"><span>⌖</span><input id="target-ip" value="127.0.0.1" spellcheck="false"><span class="target-lock">▣</span></div><span class="target-hint">Loopback or private network address</span></div>
+              <label class="speed-control" for="replay-speed">Simulation pace<select id="replay-speed" aria-label="Simulation pace"><option value="1">Normal</option><option value="2">Relaxed</option><option value="5">Slow</option><option value="10">Very slow</option></select></label>
               <div class="attack-buttons">
-                <button class="attack-button normal" data-attack="normal"><span class="attack-icon">⌂</span><span><strong>Normal browsing</strong><small>Generate baseline activity</small></span><span class="button-arrow">↗</span></button>
-                <button class="attack-button" data-attack="portscan"><span class="attack-icon scan">⌗</span><span><strong>Simulate PortScan</strong><small>60 destination ports</small></span><span class="button-arrow">↗</span></button>
-                <button class="attack-button" data-attack="bruteforce"><span class="attack-icon brute">⌁</span><span><strong>Simulate BruteForce</strong><small>Failed login burst</small></span><span class="button-arrow">↗</span></button>
-                <button class="attack-button" data-attack="dos"><span class="attack-icon dos">⌇</span><span><strong>Simulate DoS</strong><small>Rate-bounded demo burst</small></span><span class="button-arrow">↗</span></button>
+                <button class="attack-button normal" data-attack="normal" data-specular><span class="attack-icon">⌂</span><span><strong>Everyday traffic</strong><small>A normal activity baseline</small></span><span class="button-arrow">↗</span></button>
+                <button class="attack-button" data-attack="portscan" data-specular><span class="attack-icon scan">⌗</span><span><strong>Port scan</strong><small>Unusual port discovery</small></span><span class="button-arrow">↗</span></button>
+                <button class="attack-button" data-attack="bruteforce" data-specular><span class="attack-icon brute">⌁</span><span><strong>Login burst</strong><small>Repeated failed attempts</small></span><span class="button-arrow">↗</span></button>
+                <button class="attack-button" data-attack="dos" data-specular><span class="attack-icon dos">⌇</span><span><strong>Traffic flood</strong><small>A rate-limited demo burst</small></span><span class="button-arrow">↗</span></button>
               </div>
               <div class="launch-score"><div><span class="score-label">DEMO DETECTION SCORE</span><strong id="detection-score">—</strong></div><div class="score-track"><i id="score-bar"></i></div><span id="score-caption">No simulated attacks launched</span></div>
-              <button class="reset-lab-button" id="reset-lab" type="button" hidden>Reset mock lab</button>
+              <button class="reset-lab-button" id="reset-lab" type="button" hidden>Reset this session</button>
             </section>
-            <section class="panel lab-safety"><span class="secure-icon">⌑</span><div><strong>Safe by design</strong><p>Simulations generate local detector telemetry only. No packets or requests are sent to the target address.</p></div></section>
+            <section class="panel lab-safety"><span class="secure-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.5 20 7v5.4c0 4.5-3.1 7.1-8 8.6-4.9-1.5-8-4.1-8-8.6V7l8-3.5Z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg></span><div><strong>Local simulation</strong><p>Scenarios create detector telemetry locally. No packets are sent to the target address.</p></div></section>
           </section>
 
           <section class="dashboard-view" data-dashboard="blast-radius" aria-label="Blast radius dashboard" hidden>
@@ -164,30 +121,35 @@
 
           <section class="dashboard-view" data-dashboard="threat-overview" aria-label="Threat overview dashboard" hidden>
             <div class="overview-grid">
-              <section class="panel traffic-panel"><div class="panel-heading"><div><div class="panel-title">Threat telemetry</div><div class="panel-subtitle">Packets/sec · red segments indicate detections</div></div><div class="chart-legend"><span><i class="legend-normal"></i>Ingress</span><span><i class="legend-threat"></i>Outlier</span></div></div><div class="chart-wrap"><div class="axis-labels"><span>120</span><span>80</span><span>40</span><span>0</span></div><canvas id="threat-chart" aria-label="Threat telemetry chart"></canvas><div class="chart-sweep"></div></div><div class="chart-time"><span>−60s</span><span>−45s</span><span>−30s</span><span>−15s</span><span>NOW</span></div></section>
-              <section class="panel tactics-panel"><div class="panel-heading"><div><div class="panel-title">Threats by attack tactic</div><div class="panel-subtitle">Detected attack categories</div></div><span class="small-badge">TACTICS</span></div><div class="tactic-bars tactic-bars-secondary" id="threat-type-bars"></div></section>
+              <section class="panel traffic-panel"><div class="panel-heading"><div><div class="panel-title">Activity over time</div><div class="panel-subtitle">Packet rate · flagged activity marked on the chart</div></div><div class="chart-legend"><span><i class="legend-normal"></i>Traffic</span><span><i class="legend-threat"></i>Detection</span></div></div><div class="chart-wrap"><div class="axis-labels"><span>120</span><span>80</span><span>40</span><span>0</span></div><canvas id="threat-chart" aria-label="Threat telemetry chart"></canvas><div class="chart-sweep"></div></div><div class="chart-time"><span>−60s</span><span>−45s</span><span>−30s</span><span>−15s</span><span>NOW</span></div></section>
+              <section class="panel tactics-panel"><div class="panel-heading"><div><div class="panel-title">Activity types</div><div class="panel-subtitle">Detections grouped by behavior</div></div><span class="small-badge">COUNTS</span></div><div class="tactic-bars tactic-bars-secondary" id="threat-type-bars"></div></section>
             </div>
-            <section class="panel threat-breakdown-panel"><div class="panel-heading"><div><div class="panel-title">Threat breakdown</div><div class="panel-subtitle">Detection counts and tactics</div></div><span class="small-badge">ALL TIME</span></div><div class="threat-breakdown" id="threat-breakdown"></div></section>
+            <section class="panel threat-breakdown-panel"><div class="panel-heading"><div><div class="panel-title">Detection summary</div><div class="panel-subtitle">Counts by activity type</div></div><span class="small-badge">IN SESSION</span></div><div class="threat-breakdown" id="threat-breakdown"></div></section>
           </section>
 
           <section class="dashboard-view" data-dashboard="demo-ingress" aria-label="Demo ingress dashboard" hidden>
-            <section class="panel source-dashboard-panel"><div><div class="panel-title">Demo ingress source</div><div class="panel-subtitle">Choose which existing telemetry source to visualize.</div></div><div class="source-control"><span class="source-pulse"></span><select id="source-select"><option value="demo">Demo ingress</option><option value="live">Live capture</option><option value="pcap">PCAP replay</option></select><span class="chevron">⌄</span></div></section>
-            <section class="panel traffic-panel ingress-chart-panel"><div class="panel-heading"><div><div class="panel-title">Demo ingress telemetry</div><div class="panel-subtitle">Live packets/sec from the selected traffic source</div></div><div class="chart-legend"><span><i class="legend-normal"></i>Ingress</span><span><i class="legend-threat"></i>Outlier</span></div></div><div class="chart-wrap"><div class="axis-labels"><span>120</span><span>80</span><span>40</span><span>0</span></div><canvas id="ingress-chart" aria-label="Demo ingress traffic chart"></canvas><div class="chart-sweep"></div><div class="chart-pin" id="ingress-chart-pin"></div></div><div class="chart-time"><span>−60s</span><span>−45s</span><span>−30s</span><span>−15s</span><span>NOW</span></div></section>
+            <section class="panel source-dashboard-panel"><div><div class="panel-title">Choose a traffic source</div><div class="panel-subtitle">Switch between safe demo data, live capture, or a saved file.</div></div><div class="source-control"><span class="source-pulse"></span><select id="source-select"><option value="demo">Demo traffic</option><option value="live">Live capture</option><option value="pcap">Saved capture</option></select><span class="chevron">⌄</span></div></section>
+            <section class="panel traffic-panel ingress-chart-panel"><div class="panel-heading"><div><div class="panel-title">Traffic activity</div><div class="panel-subtitle">Live packet rate from the selected source</div></div><div class="chart-legend"><span><i class="legend-normal"></i>Traffic</span><span><i class="legend-threat"></i>Detection</span></div></div><div class="chart-wrap"><div class="axis-labels"><span>120</span><span>80</span><span>40</span><span>0</span></div><canvas id="ingress-chart" aria-label="Demo ingress traffic chart"></canvas><div class="chart-sweep"></div><div class="chart-pin" id="ingress-chart-pin"></div></div><div class="chart-time"><span>−60s</span><span>−45s</span><span>−30s</span><span>−15s</span><span>NOW</span></div></section>
           </section>
 
-          <section class="dashboard-view" data-dashboard="live-sniffer" aria-label="Live sniffer dashboard" hidden>
-            <section class="panel capture-panel"><div class="capture-copy"><span class="capture-icon">◉</span><div><strong>Live capture</strong><p id="capture-help">Choose an interface. Capture may require admin rights and Npcap.</p></div></div><select id="interface-select" aria-label="Capture interface"><option value="">Select interface</option></select><button class="capture-toggle" id="capture-toggle">Start capture</button></section>
-            <section class="panel replay-panel"><div class="replay-copy"><span class="replay-icon">↻</span><div><strong>Replay a capture</strong><p>Upload a PCAP to process recorded traffic through the same flow detector.</p></div></div><label class="upload-button" for="pcap-file">Choose PCAP <span>↑</span></label><input id="pcap-file" type="file" accept=".pcap,.pcapng" hidden><span id="pcap-name" class="pcap-name">No file selected</span></section>
+          <section class="dashboard-view" data-dashboard="live-sniffer" aria-label="Live capture dashboard" hidden>
+            <section class="panel capture-panel"><div class="capture-copy"><span class="capture-icon">◉</span><div><strong>Live capture</strong><p id="capture-help">Choose an interface. Capture may require admin rights and Npcap.</p></div></div><select id="interface-select" aria-label="Capture interface"><option value="">Select interface</option></select><button class="capture-toggle" id="capture-toggle" data-specular>Start capture</button></section>
+            <section class="panel replay-panel"><div class="replay-copy"><span class="replay-icon">↻</span><div><strong>Replay a capture file</strong><p>Send a saved PCAP through the local detector.</p></div></div><label class="upload-button" for="pcap-file">Choose file <span>↑</span></label><input id="pcap-file" type="file" accept=".pcap,.pcapng" hidden><span id="pcap-name" class="pcap-name">No file selected</span></section>
             <section class="panel sniffer-status"><div class="panel-title">Capture status</div><p>Live capture and PCAP replay use the existing NetGuard traffic pipeline. Local permissions and capture adapters may affect availability.</p><div class="sniffer-status-line"><span>WebSocket</span><strong id="ws-status">connecting</strong></div></section>
           </section>
         </div>
 
         <aside class="panel alerts-panel" id="alerts">
-          <div class="panel-heading"><div><div class="panel-title">Notifications</div><div class="panel-subtitle">Security events and system activity</div></div><span class="feed-live"><i></i> LIVE</span></div>
-          <div class="notification-summary"><strong id="notification-count">0</strong><span>recent events</span><span class="notification-signal"></span></div>
+          <div class="panel-heading"><div><div class="panel-title">Recent alerts</div><div class="panel-subtitle">Newest first</div></div><div class="alerts-tools"><label class="search-box" for="dashboard-search"><span aria-hidden="true">⌕</span><input id="dashboard-search" type="search" placeholder="Search alerts"></label><button class="text-button" id="export-button" type="button" title="Download alerts as JSON" aria-label="Download alerts as JSON">Export</button></div></div>
+          <div class="notification-summary"><strong id="notification-count">0</strong><span>events in this session</span><span class="notification-signal"></span></div>
+          <div class="alert-filters" id="alert-filters" role="group" aria-label="Filter detections">
+            <button type="button" class="filter-chip active" data-alert-filter="all" aria-pressed="true">All <span id="filter-count-all">0</span></button>
+            <button type="button" class="filter-chip" data-alert-filter="high" aria-pressed="false">High severity <span id="filter-count-high">0</span></button>
+            <button type="button" class="filter-chip" data-alert-filter="blocked" aria-pressed="false">Blocked <span id="filter-count-blocked">0</span></button>
+          </div>
           <div class="alert-list" id="alert-list"><div class="notification-skeleton"><i></i><span></span><span></span></div><div class="notification-skeleton"><i></i><span></span><span></span></div><div class="notification-skeleton"><i></i><span></span><span></span></div></div>
-          <div class="panel-footer"><span id="feed-total">0 events</span><button class="text-button" id="clear-feed">Clear view <span>↗</span></button></div>
-          <section class="activity-section"><h2>Activities</h2><div class="activity-item"><i>●</i><span><strong>FastAPI telemetry daemon</strong><small>Waiting for service status</small></span></div><div class="activity-item"><i>●</i><span><strong>SQLite persistence</strong><small>Local event history</small></span></div><div class="activity-item"><i>●</i><span><strong>Detection pipeline</strong><small id="activity-model">Rules active</small></span></div></section>
+          <div class="panel-footer"><span id="feed-total">0 events</span><button class="text-button" id="clear-feed">Clear display</button></div>
+          <section class="activity-section"><h2>Activities</h2><div class="activity-item"><i>●</i><span><strong>FastAPI telemetry daemon</strong><small id="activity-api">Checking API status</small></span></div><div class="activity-item"><i>●</i><span><strong>SQLite persistence</strong><small>Local event history</small></span></div><div class="activity-item"><i>●</i><span><strong>Detection pipeline</strong><small id="activity-model">Rules active</small></span></div></section>
           <section class="endpoint-section"><h2>Monitored endpoints <small>ILLUSTRATIVE</small></h2><div class="endpoint-card"><span class="endpoint-dot"></span><span><strong>Border Gateway</strong><small>10.0.0.1</small></span></div><div class="endpoint-card" id="endpoint-asset"><span class="endpoint-dot"></span><span><strong>DMZ Target Server</strong><small id="endpoint-target">10.0.2.14</small></span></div><div class="endpoint-card"><span class="endpoint-dot"></span><span><strong>Core Cluster Node</strong><small>10.0.1.8</small></span></div></section>
           <div class="sidebar-footer"><span>ENGINE</span><strong><i class="model-status-dot"></i> <span id="rail-engine-status">RULES ACTIVE</span></strong></div>
         </aside>
@@ -195,46 +157,15 @@
 
       <footer class="footer"><span><i></i> NETGUARD LOCAL MONITOR</span><span>DETECT <b>·</b> EXPLAIN <b>·</b> RESPOND</span><span>WebSocket <strong>live telemetry</strong></span></footer>
     </main>
-
-    <!-- Recent activity and runtime status -->
-    <aside class="snow-sidebar-right" data-lenis-prevent>
-      <div>
-        <div class="snow-right-section-title">Recent alerts</div>
-        <div class="snow-feed-list" id="snow-threat-feed">
-          <div class="snow-feed-empty">No alert events received yet.</div>
-        </div>
-      </div>
-
-      <div>
-        <div class="snow-right-section-title">Activity</div>
-        <div class="snow-feed-list" id="snow-activity-feed">
-          <div class="snow-feed-empty">Actions from this session will appear here.</div>
-        </div>
-      </div>
-
-      <div>
-        <div class="snow-right-section-title">Runtime</div>
-        <div class="snow-endpoint-list">
-          <div class="snow-endpoint-item">
-            <div class="snow-endpoint-meta">
-              <span class="snow-endpoint-title">Traffic source</span>
-              <span class="snow-endpoint-ip" id="current-source-text">Lab simulation</span>
-            </div>
-            <span class="snow-pulse-dot" id="source-status-dot" title="Active"></span>
-          </div>
-          <div class="snow-endpoint-item">
-            <div class="snow-endpoint-meta">
-              <span class="snow-endpoint-title">Detection method</span>
-              <span class="snow-endpoint-ip" id="runtime-engine-text">Rules only</span>
-            </div>
-            <span class="snow-pulse-dot" id="engine-status-dot" title="Active"></span>
-          </div>
-        </div>
-      </div>
-    </aside>
   </div>
+  <section class="incident-drawer" id="incident-drawer" aria-labelledby="drawer-title" aria-hidden="true">
+    <div class="drawer-backdrop" data-close-drawer></div>
+    <div class="drawer-content"><div class="drawer-grip"></div><div class="drawer-heading"><div><div class="eyebrow">INCIDENT RESPONSE</div><h2 id="drawer-title">Recommended Actions</h2></div><button class="icon-button" id="close-actions" aria-label="Close recommended actions">×</button></div><div class="drawer-meta"><span class="severity-badge" id="drawer-severity">HIGH</span><span>ASSET <strong id="drawer-asset">10.0.2.14 · monitored endpoint</strong></span><span class="mitre-chip" id="mitre-chip">MITRE ATT&amp;CK · T1046</span></div><p class="local-response-note">Block actions update NetGuard's simulated application blocklist only. No host firewall rules are changed.</p><ol class="recommend-steps" id="recommend-steps"></ol></div>
+  </section>
   <div class="toast" id="toast" role="status"></div>
+  <div id="dashboard-specular-root" hidden></div>
   <script src="/static/netguard-runtime-config.js"></script>
-  <script src="/static/app.js"></script>
+  <script src="/static/dashboard.js?v=8"></script>
+  <script type="module" src="/static/landing-assets/landing.js?v=20"></script>
 </body>
 </html>

@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#0b0b0d">
   <meta name="description" content="Follow network flows from first signal to detector decision. Explore NetGuard's safe lab, alert explanations, and local PCAP replay.">
   <title>NetGuard — Every alert has a trail</title>
-  <link rel="stylesheet" href="/static/landing.css?v=20">
-  <link rel="stylesheet" href="/static/landing-assets/landing.css?v=6">
+  <link rel="stylesheet" href="/static/landing.css?v=23">
+  <link rel="stylesheet" href="/static/landing-assets/landing.css?v=10">
   <link rel="stylesheet" href="/static/netguard-agentory.css?v=9">
 </head>
 <body>
@@ -32,6 +32,7 @@
     <section class="hero" aria-labelledby="hero-title">
       <div class="hero-visual">
         <div class="hero-visual-motion">
+        <div id="hero-grainient" class="hero-grainient" aria-hidden="true"></div>
         <svg class="hero-earth" viewBox="0 0 760 700" aria-hidden="true" focusable="false">
           <defs>
             <radialGradient id="earth-glow" cx="50%" cy="43%" r="60%">
@@ -120,6 +121,7 @@
 
       <div class="walkthrough" data-reveal data-story-stage="0">
         <div class="walkthrough-visual">
+          <div id="workflow-threads" class="walkthrough-webthreads" aria-hidden="true"></div>
           <div class="walkthrough-visual-grid" aria-hidden="true"></div>
           <div class="route-graphic" aria-hidden="true">
             <div class="route-progress"><span></span></div>
@@ -213,6 +215,7 @@
     </section>
 
     <section class="contact-section" id="contact" aria-labelledby="contact-title" data-reveal>
+      <div id="contact-particles" class="contact-particles" aria-hidden="true"></div>
       <div>
         <span class="eyebrow">OPEN SOURCE PROJECT</span>
         <h2 id="contact-title" data-flow-heading><span class="heading-line"><span class="heading-line-inner">Build the next</span></span><span class="heading-line"><span class="heading-line-inner">signal with us.</span></span></h2>
@@ -233,8 +236,8 @@
 
   <script defer src="/static/vendor/gsap.min.js?v=1"></script>
   <script defer src="/static/vendor/ScrollTrigger.min.js?v=1"></script>
-  <script defer src="/static/landing.js?v=19"></script>
-  <script type="module" src="/static/landing-assets/landing.js?v=11"></script>
+  <script defer src="/static/landing.js?v=20"></script>
+  <script type="module" src="/static/landing-assets/landing.js?v=15"></script>
   <div id="smooth-scroll-root" hidden></div>
 </body>
 </html>

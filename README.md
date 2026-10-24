@@ -4,18 +4,27 @@ NetGuard is a local network threat-monitoring demo for the SW-25 hackathon chall
 
 ## Run locally
 
-Python 3.11 is recommended.
+Python 3.11 is recommended. The default local setup uses SQLite and local capture settings; it does not need a `.env` file.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+On Windows PowerShell:
 
 ```powershell
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
-python -m uvicorn app.main:app --env-file .env --host 127.0.0.1 --port 8000
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-On Linux/macOS, activate the environment with `source .venv/bin/activate`, then run `python -m uvicorn app.main:app --env-file .env --host 127.0.0.1 --port 8000`. The local `.env` is ignored by Git; add `NETGUARD_DATABASE_URL` there if you want to connect this local backend to Supabase. Keep that connection string private. Open [http://127.0.0.1:8000](http://127.0.0.1:8000) for the landing page, then choose **Open dashboard** (or go directly to `/dashboard`).
+Open [http://127.0.0.1:8000](http://127.0.0.1:8000) for the landing page, then choose **Open dashboard** (or go directly to `/dashboard`). For optional settings, create a local `.env`; add `NETGUARD_DATABASE_URL` there only if you want to connect this backend to Supabase. `.env.example` contains hosted database and capture-agent placeholders, so fill those with real values before using them. Keep database URLs and agent tokens private.
 
-The landing page bundles Lenis from `frontend/`. GSAP 3.12.5 and its matching ScrollTrigger plugin remain local assets in `static/vendor/` and choreograph the scroll-linked text and signal animations. Rebuild after changing the frontend with Node.js 20.19 or newer: run `npm ci` and then `npm run build` from `frontend/`. The build writes to `static/landing-assets/`, which FastAPI serves with the rest of the page.
+The landing page uses Lenis and React Bits' `AnimatedContent` for its section reveals, a subtle interactive `Grainient` texture behind the hero globe, a network weave behind the flow diagram, and a sparse ember field behind the contact section. GSAP and ScrollTrigger also drive the hero and flow-story motion from local assets in `static/vendor/`. Rebuild after changing the frontend with Node.js 20.19 or newer: run `npm ci` and then `npm run build` from `frontend/`. The build writes to `static/landing-assets/`, which FastAPI serves with the rest of the page.
 
 ## Project layout
 
@@ -76,7 +85,7 @@ The default source is **Lab simulation**. The attack buttons generate bounded, l
 
 ## Dashboard demo mode
 
-Open `/?mock=1` to run the dashboard's scripted UI without the backend. Use the sidebar to switch between Overview, Incident Lab, Threat Overview, Isolation Forest, Attack Lab, Demo Ingress, and Live Sniffer; each view also has a matching URL hash (for example `/?mock=1#incident-lab`). Use **Inject anomaly** or one of the simulated attack buttons to play the normal → detected → responding → contained sequence. In Attack Lab, **Reset mock lab** clears the scripted counters. Add `&state=normal`, `&state=elevated`, `&state=critical`, or `&state=contained` to preview a specific theme. Press **P** or use **Presenter** to toggle the large-screen layout. Mock telemetry is clearly marked and never makes API or WebSocket requests.
+Open `/?mock=1` to run the dashboard's scripted UI without the backend. Use the top navigation to switch between Overview, Alerts, Activity, Model, Sources, Safe test, Live capture, and Exposure; each view also has a matching URL hash (for example `/?mock=1#incident-lab`). Use **Create sample detection** or one of the simulated attack buttons to play the normal → detected → responding → contained sequence. In Safe test, **Reset mock lab** clears the scripted counters. Add `&state=normal`, `&state=elevated`, `&state=critical`, or `&state=contained` to preview a specific theme. Press **P** or use **Presenter** to toggle the large-screen layout. Mock telemetry is clearly marked and never makes API or WebSocket requests.
 
 ## Traffic sources
 
