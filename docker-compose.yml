@@ -1,0 +1,14 @@
+services:
+  netguard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: netguard-app
+    ports:
+      - "8000:8000"
+    environment:
+      - NETGUARD_CAPTURE_MODE=local
+      - PORT=8000
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

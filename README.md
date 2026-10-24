@@ -45,14 +45,26 @@ settings:         Environment variables via NETGUARD_DATA_DIR, NETGUARD_WHITELIS
 
 This keeps configuration in one place and avoids importing database configuration from the app entry module.
 
-## Deploy on Render
+## Deploy on Render (Docker or Blueprint)
 
-This repository includes `render.yaml` for a public Render Free web service.
+This repository includes a production-ready [Dockerfile](file:///home/amitesh-bhardwaj/Projects/int-detect/Dockerfile) and [render.yaml](file:///home/amitesh-bhardwaj/Projects/int-detect/render.yaml) for a public Render Free web service.
 
+### Option A: Render Blueprint (Automatic)
 1. Push the repository to GitHub.
 2. In Render, choose **New +** > **Blueprint**, then select this repository.
-3. Review the detected `netguard` service and deploy it. Render installs `requirements.txt`, starts FastAPI with the platform-provided `PORT`, and checks `/api/health`.
-4. Open the generated `https://<service-name>.onrender.com` URL and choose **Open dashboard** (or add `/dashboard`). Confirm `/api/health`, launch a simulated PortScan, and watch the dashboard alert feed.
+3. Render reads `render.yaml`, builds the Docker image automatically, assigns `$PORT`, and configures `/api/health`.
+
+### Option B: Manual Web Service
+1. In Render, select **New +** > **Web Service**.
+2. Connect your repository and choose **Docker** as the runtime environment.
+3. Health Check Path: `/api/health`.
+4. (Optional) Under Environment Variables, add `NETGUARD_CAPTURE_MODE=agent`.
+
+### Run via Docker Locally
+```bash
+docker compose up --build
+```
+Then visit `http://127.0.0.1:8000`.
 
 Free Render services spin down when idle and can take about a minute to wake. Their filesystem is ephemeral: SQLite alerts, blocks, and attack history reset after a restart or redeploy. This deployment supports dashboard simulation, PCAP replay, APIs, and WebSockets. Use an always-on backend plan for consistently fast access. Live Scapy capture still requires a local lab machine with packet-capture permissions and a supported driver.
 ## Persistent PostgreSQL storage with Supabase (Optional)
