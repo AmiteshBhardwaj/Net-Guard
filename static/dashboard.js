@@ -41,6 +41,7 @@
   const tacticColors = { PortScan: "#ff795c", BruteForce: "#d6a56f", "DoS/DDoS": "#cf7772", Normal: "#91b7a0" };
   const responseLabels = ["Anomaly scored", "Source IP identified", "Blocklist rule applied", "Flow handling updated", "Local response verified"];
   const dashboards = {
+    landing: ["Intro", "Follow network signals from first probe to readable alert."],
     overview: ["Overview", "See network activity and recent alerts."],
     "incident-lab": ["Alerts", "Review recent alerts and how NetGuard responded."],
     "threat-overview": ["Activity", "See how traffic and alerts have changed over time."],
@@ -99,6 +100,11 @@
       if (active) link.setAttribute("aria-current", "page");
       else link.removeAttribute("aria-current");
     });
+    const isLanding = key === "landing";
+    const pageHeading = $(".page-heading");
+    if (pageHeading) pageHeading.hidden = isLanding;
+    const sourceNotice = $("#source-notice");
+    if (sourceNotice) sourceNotice.hidden = isLanding || state.noticeDismissed;
     const [title, description] = dashboards[key];
     $("#dashboard-title").textContent = title;
     $("#dashboard-description").textContent = description;
@@ -1221,8 +1227,13 @@
 
   function init() {
     bindEvents();
-    setTheme("normal");
-    setDashboard(location.hash.slice(1) || "overview", false);
+    let initialKey = location.hash.slice(1);
+    if (!initialKey) {
+      if (location.pathname === "/landing") initialKey = "landing";
+      else if (location.pathname === "/threat-dashboard") initialKey = "blast-radius";
+      else initialKey = "overview";
+    }
+    setDashboard(initialKey, false);
     if (state.mock) {
       initMockMode();
     } else {

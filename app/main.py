@@ -255,23 +255,11 @@ class AgentFlowBatch(BaseModel):
 
 
 @app.get("/")
-async def root_redirect() -> RedirectResponse:
-    return RedirectResponse(url="/dashboard")
-
-
-@app.get("/landing")
-async def landing_page() -> FileResponse:
-    return FileResponse(ROOT / "static" / "landing.html")
-
-
 @app.get("/dashboard")
-async def dashboard_page() -> FileResponse:
-    return FileResponse(ROOT / "static" / "index.html")
-
-
+@app.get("/landing")
 @app.get("/threat-dashboard")
-async def threat_dashboard_page() -> FileResponse:
-    return FileResponse(ROOT / "static" / "threat_dashboard.html")
+async def single_page_app(request: Request) -> FileResponse:
+    return FileResponse(ROOT / "static" / "index.html")
 
 
 @app.get("/api/health")

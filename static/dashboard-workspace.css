@@ -640,3 +640,17 @@ body:not([data-dashboard="overview"]):not([data-dashboard="incident-lab"]) .aler
   from { opacity: .85; scale: .35; }
   to { opacity: 0; scale: 7; }
 }
+
+.dashboard-view[data-dashboard="landing"] {
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--page);
+  margin-top: 16px;
+}
+.dashboard-view[data-dashboard="landing"] .hero {
+  border-radius: 16px 16px 0 0;
+}
+body[data-dashboard="landing"] .page-heading {
+  display: none !important;
+}
