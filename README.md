@@ -2,27 +2,15 @@
 
 NetGuard is a local network threat-monitoring demo for the SW-25 hackathon challenge. It combines packet-derived flow features, explainable detection rules, an optional Random Forest, and a live browser dashboard.
 
-## Run locally
+## Run locally (Docker)
 
-Python 3.11 is recommended. The default local setup uses SQLite and local capture settings; it does not need a `.env` file.
+Docker is required. The default setup uses SQLite and local capture settings. Copy `.env.example` to `.env` and fill in any values you need before starting.
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+docker compose up --build
 ```
 
-On Windows PowerShell:
-
-```powershell
-py -3.11 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
-```
-
-Open [http://127.0.0.1:8000](http://127.0.0.1:8000) for the landing page, then choose **Open dashboard** (or go directly to `/dashboard`). For optional settings, create a local `.env`; add `NETGUARD_DATABASE_URL` there only if you want to connect this backend to Supabase. `.env.example` contains hosted database and capture-agent placeholders, so fill those with real values before using them. Keep database URLs and agent tokens private.
+Open [http://127.0.0.1:8000](http://127.0.0.1:8000) for the landing page, then choose **Open dashboard** (or go directly to `/dashboard`). Add `NETGUARD_DATABASE_URL` to `.env` only if you want to connect to Supabase. Keep database URLs and agent tokens private.
 
 The landing page uses Lenis and React Bits' `AnimatedContent` for its section reveals, a subtle interactive `Grainient` texture behind the hero globe, a network weave behind the flow diagram, and a sparse ember field behind the contact section. GSAP and ScrollTrigger also drive the hero and flow-story motion from local assets in `static/vendor/`. Rebuild after changing the frontend with Node.js 20.19 or newer: run `npm ci` and then `npm run build` from `frontend/`. The build writes to `static/landing-assets/`, which FastAPI serves with the rest of the page.
 
@@ -60,11 +48,6 @@ This repository includes a production-ready [Dockerfile](file:///home/amitesh-bh
 3. Health Check Path: `/api/health`.
 4. (Optional) Under Environment Variables, add `NETGUARD_CAPTURE_MODE=agent`.
 
-### Run via Docker Locally
-```bash
-docker compose up --build
-```
-Then visit `http://127.0.0.1:8000`.
 
 Free Render services spin down when idle and can take about a minute to wake. Their filesystem is ephemeral: SQLite alerts, blocks, and attack history reset after a restart or redeploy. This deployment supports dashboard simulation, PCAP replay, APIs, and WebSockets. Use an always-on backend plan for consistently fast access. Live Scapy capture still requires a local lab machine with packet-capture permissions and a supported driver.
 ## Persistent PostgreSQL storage with Supabase (Optional)
@@ -86,6 +69,7 @@ Hosted application servers cannot capture traffic from your local network. In `a
 
 ```bash
 export NETGUARD_AGENT_TOKEN='<same secret configured on the backend>'
+pip install scapy requests
 python scripts/capture_agent.py --backend https://netguard-api.example.com --interface eth0
 ```
 
@@ -111,8 +95,8 @@ If Scapy or the capture driver is unavailable, the dashboard and lab simulation 
 
 The app starts with explainable rules and says so in the model panel. Live capture and PCAP replay detect port scans and sustained forward-packet bursts; failed-login detection needs application-level telemetry. Train and load a Random Forest using multiple CICIDS2017 per-capture CSV files:
 
-```powershell
-python scripts/train_model.py --data data/cicids
+```bash
+docker compose exec netguard python scripts/train_model.py --data data/cicids
 ```
 
 Use `--jobs 1` where the environment restricts multiprocessing.
