@@ -250,91 +250,12 @@
       );
     setStoryStage(0);
 
-    const revealItems = Array.from(document.querySelectorAll('[data-reveal]'));
-    gsap.set(revealItems, { autoAlpha: 0, y: 22 });
-    const headingTweens = ScrollTrigger
-      ? Array.from(document.querySelectorAll('[data-flow-heading]')).map((heading) => gsap.fromTo(
-        heading.querySelectorAll('.heading-line-inner'),
-        { y: 16, autoAlpha: 0 },
-        {
-          y: 0,
-          autoAlpha: 1,
-          duration: 1,
-          stagger: 0.12,
-          ease: 'none',
-          scrollTrigger: {
-            trigger: heading,
-            start: 'top 88%',
-            end: 'top 48%',
-            scrub: 0.55,
-            invalidateOnRefresh: true,
-          },
-        }
-      ))
-      : [];
-
-    let observer;
-    if ('IntersectionObserver' in window) {
-      observer = new IntersectionObserver((entries) => {
-        const visibleItems = entries
-          .filter((entry) => entry.isIntersecting)
-          .map((entry) => {
-            observer.unobserve(entry.target);
-            return entry.target;
-          });
-        if (!visibleItems.length) return;
-        gsap.to(visibleItems, {
-          autoAlpha: 1,
-          y: 0,
-          duration: 0.7,
-          stagger: 0.1,
-          ease: 'power3.out',
-          clearProps: 'opacity,transform,visibility',
-        });
-        visibleItems.forEach((item) => {
-          if (item.matches('.capability-card')) {
-            const particles = item.querySelectorAll('.art-burst');
-            const floatingObject = item.querySelector('.detect-card, .pcap-file');
-            if (particles.length) {
-              gsap.fromTo(particles,
-                { scale: 0.18, autoAlpha: 0 },
-                { scale: 1, autoAlpha: 1, duration: 0.62, delay: 0.12, stagger: 0.11, ease: 'back.out(1.8)', clearProps: 'transform,opacity,visibility' }
-              );
-            }
-            if (floatingObject) {
-              gsap.fromTo(floatingObject,
-                { y: 22, rotation: -15, scale: 0.92 },
-                { y: 0, rotation: item.matches('.card-detect') ? -4 : -9, scale: 1, duration: 0.78, delay: 0.14, ease: 'power3.out', clearProps: 'transform' }
-              );
-            }
-          }
-          if (item.matches('.source-row')) {
-            const icon = item.querySelector('.source-row-icon');
-            if (icon) gsap.fromTo(icon,
-              { rotation: -12, scale: 0.78 },
-              { rotation: 0, scale: 1, duration: 0.58, delay: 0.12, ease: 'back.out(1.9)', clearProps: 'transform' }
-            );
-          }
-        });
-      }, { threshold: 0.13, rootMargin: '0px 0px -6% 0px' });
-      revealItems.forEach((item) => observer.observe(item));
-    } else {
-      gsap.to(revealItems, { autoAlpha: 1, y: 0, duration: 0.6, stagger: 0.09, clearProps: 'opacity,transform,visibility' });
-    }
-
     return () => {
-      observer?.disconnect();
       heroIconFloat?.kill();
       intro.kill();
-      headingTweens.forEach((tween) => {
-        tween.scrollTrigger?.kill();
-        tween.kill();
-      });
       storyTimeline.scrollTrigger?.kill();
       storyTimeline.kill();
       storyTimeline = null;
-      gsap.killTweensOf(revealItems);
-      gsap.set(revealItems, { clearProps: 'opacity,transform,visibility' });
     };
   });
 
