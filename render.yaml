@@ -16,9 +16,9 @@ services:
       # Populate this with your Render service URL to enable the keep-alive ping.
       - key: NETGUARD_KEEP_ALIVE_URL
         sync: false
-      # Allowed frontend origins (comma-separated).
+      # Allowed frontend origins (comma-separated). Set * or specific domain.
       - key: NETGUARD_CORS_ORIGINS
-        value: https://int-detect.vercel.app
+        value: "*"
       # Token the capture agent must send. Generate a long random string.
       - key: NETGUARD_AGENT_TOKEN
         sync: false

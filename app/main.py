@@ -17,7 +17,7 @@ from typing import Any
 
 from fastapi import FastAPI, Header, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -255,6 +255,11 @@ class AgentFlowBatch(BaseModel):
 
 
 @app.get("/")
+async def root_redirect() -> RedirectResponse:
+    return RedirectResponse(url="/dashboard")
+
+
+@app.get("/landing")
 async def landing_page() -> FileResponse:
     return FileResponse(ROOT / "static" / "landing.html")
 
