@@ -1,6 +1,6 @@
 # NetGuard
 
-NetGuard is a local network threat-monitoring demo for the SW-25 hackathon challenge. It combines packet-derived flow features, explainable detection rules, an optional Random Forest, and a live browser dashboard.
+NetGuard is a local network threat-monitoring system. It combines packet-derived flow features, explainable detection rules, an optional Random Forest, and a live browser dashboard.
 
 ## Run locally (Docker)
 
