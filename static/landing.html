@@ -7,8 +7,8 @@
   <meta name="description" content="Follow network flows from first signal to detector decision. Explore NetGuard's safe lab, alert explanations, and local PCAP replay.">
   <title>NetGuard — Every alert has a trail</title>
   <link rel="stylesheet" href="/static/landing.css?v=23">
-  <link rel="stylesheet" href="/static/landing-assets/landing.css?v=11">
-  <link rel="stylesheet" href="/static/netguard-agentory.css?v=10">
+  <link rel="stylesheet" href="/static/landing-assets/landing.css?v=10">
+  <link rel="stylesheet" href="/static/netguard-agentory.css?v=9">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -28,20 +28,216 @@
     </div>
   </header>
 
-  <main id="main" class="landing-main" style="min-height: calc(100vh - 160px); position: relative; width: 100%;">
-    <div id="landing-root"></div>
+  <main id="main">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-visual">
+        <div class="hero-visual-motion">
+        <div id="hero-grainient" class="hero-grainient" aria-hidden="true"></div>
+        <svg class="hero-earth" viewBox="0 0 760 700" aria-hidden="true" focusable="false">
+          <defs>
+            <radialGradient id="earth-glow" cx="50%" cy="43%" r="60%">
+              <stop offset="0" stop-color="#ff5b20" stop-opacity=".28"></stop>
+              <stop offset=".56" stop-color="#e84b17" stop-opacity=".12"></stop>
+              <stop offset="1" stop-color="#e84b17" stop-opacity="0"></stop>
+            </radialGradient>
+            <radialGradient id="earth-fill" cx="37%" cy="28%" r="76%">
+              <stop offset="0" stop-color="#37190e"></stop>
+              <stop offset=".65" stop-color="#180e0a"></stop>
+              <stop offset="1" stop-color="#0c0b0b"></stop>
+            </radialGradient>
+            <pattern id="earth-dots" width="8" height="8" patternUnits="userSpaceOnUse">
+              <circle cx="2.5" cy="2.5" r="1.65" fill="#ff642d"></circle>
+            </pattern>
+            <clipPath id="earth-clip">
+              <circle cx="380" cy="365" r="190"></circle>
+            </clipPath>
+          </defs>
+          <ellipse class="earth-halo" cx="380" cy="360" rx="325" ry="290" fill="url(#earth-glow)"></ellipse>
+          <g class="earth-orbit earth-orbit--outer" fill="none" stroke="#6d2b17" stroke-width="5">
+            <ellipse class="earth-orbit-path" cx="380" cy="365" rx="245" ry="220" stroke-dasharray="430 22 225 22 390 22 180 22"></ellipse>
+          </g>
+          <g class="earth-orbit earth-orbit--inner" fill="none" stroke="#8c3518" stroke-opacity=".56" stroke-width="4">
+            <ellipse class="earth-orbit-path" cx="380" cy="365" rx="220" ry="200" stroke-dasharray="310 16 200 16 300 16 180 16"></ellipse>
+          </g>
+          <circle class="earth-disc" cx="380" cy="365" r="190" fill="url(#earth-fill)"></circle>
+          <g class="earth-surface" clip-path="url(#earth-clip)">
+            <g class="earth-land" fill="url(#earth-dots)">
+              <path d="M190 219c14-31 46-54 78-59 21-3 43 5 57 20l26 4 20 17-7 19-22 9-13 25-24 2-13 24-25 6-10 23-22-6-8-25-23-6-10-23-21-9-4-23-16-3z"></path>
+              <path d="M305 309c19-16 43-19 59-7l13 19-9 21 8 21-8 27-15 22-10 39-19 34-16-15-5-32-13-20 5-27-12-24 8-20-7-19z"></path>
+              <path d="M386 210c18-13 42-15 57-5l10 15-15 13-17-4-13 13-15-7-12-13z"></path>
+              <path d="M398 244c19-14 41-12 54 3l11 28-9 26-13 23-6 32-16 26-16-7-8-27-12-20 3-29-12-18 8-20-7-13z"></path>
+              <path d="M437 189c30-22 74-25 108-10l27 18-7 19-23 2-12 16-24-4-18 14-23-9-20 9-19-14 8-17-13-12z"></path>
+              <path d="M486 354c14-12 36-13 50-3l8 17-16 15-22 4-18-12z"></path>
+              <path d="M360 183c6-8 18-10 25-5l1 10-12 7-13-3z"></path>
+            </g>
+            <g class="earth-grid" fill="none" stroke="#ff8b52" stroke-opacity=".2" stroke-width="1">
+              <ellipse cx="380" cy="365" rx="78" ry="190"></ellipse>
+              <ellipse cx="380" cy="365" rx="137" ry="190"></ellipse>
+              <ellipse cx="380" cy="365" rx="189" ry="73"></ellipse>
+              <ellipse cx="380" cy="365" rx="189" ry="137"></ellipse>
+              <path d="M190 365h380M210 293h340M210 437h340"></path>
+            </g>
+          </g>
+          <circle class="earth-edge" cx="380" cy="365" r="190" fill="none" stroke="#f8783c" stroke-opacity=".25"></circle>
+        </svg>
+        <nav class="hero-orbit-nav" aria-label="Explore NetGuard">
+          <a class="hero-orbit-icon hero-orbit-icon--capture" href="#workflow" aria-label="How it works" data-label="How it works">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3.75h7l4 4v12.5H7a2 2 0 0 1-2-2v-12a2.5 2.5 0 0 1 2-2.5Z"></path><path d="M14 4v4h4M8 13h6M8 16h5"></path></svg>
+          </a>
+          <a class="hero-orbit-icon hero-orbit-icon--flow" href="#tech-stack" aria-label="Technology stack" data-label="Tech stack">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="7" r="2.25"></circle><circle cx="18" cy="17" r="2.25"></circle><circle cx="17" cy="6" r="1.5"></circle><path d="m8 8 7.2 7M8.2 6.8l7.3-.6"></path></svg>
+          </a>
+          <a class="hero-orbit-icon hero-orbit-icon--rule" href="#contact" aria-label="Contact and source code" data-label="Contact & source">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.4 4.2L19 7.5"></path><path d="M12 3.5 20 7v5.2c0 4.3-3.1 7-8 8.8-4.9-1.8-8-4.5-8-8.8V7l8-3.5Z"></path></svg>
+          </a>
+        </nav>
+        </div>
+      </div>
+      <div class="hero-copy">
+        <div class="eyebrow intro-item"><span class="eyebrow-pulse" aria-hidden="true"></span> Network signals, made legible</div>
+        <h1 class="hero-title" id="hero-title"><span class="title-line"><span class="title-line-inner">Every alert</span></span><span class="title-line hero-title-accent"><span class="title-line-inner">has a trail</span></span></h1>
+        <p class="hero-description intro-item">Follow a network flow from first signal to rule match, with the evidence still in view.</p>
+        <div class="hero-actions intro-item">
+          <a class="button button-primary" href="/dashboard">
+            Open the traffic desk <span class="button-arrow" aria-hidden="true">↗</span>
+          </a>
+          <a class="button button-quiet" href="#workflow">See how a flow moves <span aria-hidden="true">↓</span></a>
+        </div>
+        <div class="hero-annotation intro-item">
+          <span class="annotation-mark" aria-hidden="true">i</span>
+          <p>Lab scenarios create labeled events inside NetGuard. They do not send network traffic.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="workflow-section" id="workflow" aria-labelledby="workflow-title" data-velocity-surface>
+      <div class="section-heading workflow-heading" data-reveal>
+        <div>
+          <span class="eyebrow">THE EVENT PATH</span>
+          <h2 id="workflow-title" data-flow-heading><span class="heading-line"><span class="heading-line-inner">From raw signal</span></span><span class="heading-line"><span class="heading-line-inner">to readable reason.</span></span></h2>
+        </div>
+        <p>Pick a behavior to see how NetGuard groups a flow, checks a rule, and records the result.</p>
+      </div>
+
+      <div class="walkthrough" data-reveal data-story-stage="0">
+        <div class="walkthrough-visual">
+          <div id="workflow-threads" class="walkthrough-webthreads" aria-hidden="true"></div>
+          <div class="walkthrough-visual-grid" aria-hidden="true"></div>
+          <div class="route-graphic" aria-hidden="true">
+            <div class="route-progress"><span></span></div>
+            <span class="route-traveler"></span>
+            <div class="route-node route-origin is-current"><span class="route-node-core"></span><span class="route-label">SOURCE</span></div>
+            <div class="route-line"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="route-node route-detect"><span class="route-bracket">✓</span><span class="route-label">RULE</span></div>
+            <div class="route-line route-line-short"><i></i><i></i><i></i></div>
+            <div class="route-node route-review"><span class="route-review-dot"></span><span class="route-label">LOG</span></div>
+          </div>
+          <div class="visual-event-card">
+            <span class="visual-event-icon">!</span>
+            <div><strong id="visual-event-name">Port scan detected</strong></div>
+            <span class="visual-event-arrow">↗</span>
+          </div>
+        </div>
+
+        <div class="flow-panel">
+          <div class="panel-heading">
+            <h3>Choose a behavior</h3>
+          </div>
+          <div class="scenario-controls" role="group" aria-label="Choose an illustrative detection scenario">
+            <button type="button" data-walkthrough="portscan" aria-pressed="true">Port scan</button>
+            <button type="button" data-walkthrough="bruteforce" aria-pressed="false">Brute force</button>
+            <button type="button" data-walkthrough="burst" aria-pressed="false">Request burst</button>
+          </div>
+          <div class="scenario-summary" id="scenario-summary" aria-live="polite" aria-atomic="true">
+            <div class="scenario-summary-main">
+              <span class="scenario-summary-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 12h3l2.2-5 4.1 10 2.3-5H21"></path><circle cx="8.2" cy="7" r="1"></circle><circle cx="12.3" cy="17" r="1"></circle></svg></span>
+              <div class="scenario-summary-copy">
+                <div class="scenario-summary-topline"><span>WHY THIS STANDS OUT</span><span class="scenario-summary-status"><i></i> RULE SIGNAL</span></div>
+                <p id="scenario-description">One device probes many ports in seconds, checking which services respond. NetGuard groups those attempts by source and time window, then flags the behavior when the 50-port rule is met.</p>
+                <div class="scenario-pattern"><span>Pattern</span><strong id="scenario-pattern">50+ ports · 5 seconds</strong></div>
+              </div>
+            </div>
+            <div class="scenario-summary-signal" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          </div>
+          <div class="flow-steps">
+            <div class="flow-step is-current" data-step="0">
+              <div class="step-symbol symbol-flow" aria-hidden="true"><i></i><i></i><i></i></div>
+              <div class="step-copy"><h4>Observe</h4><p id="walkthrough-observed">Many destination ports from one source.</p></div>
+            </div>
+            <div class="flow-step" data-step="1">
+              <div class="step-symbol symbol-check" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"></path></svg></div>
+              <div class="step-copy"><h4>Evaluate</h4><p id="walkthrough-evaluated">Check for 50+ destination ports within five seconds.</p></div>
+            </div>
+            <div class="flow-step" data-step="2">
+              <div class="step-symbol symbol-event" aria-hidden="true"><i></i></div>
+              <div class="step-copy"><h4>Review</h4><p id="walkthrough-result">Review the port-scan rule match in the alert log.</p></div>
+            </div>
+          </div>
+          <p class="walkthrough-note">A short, illustrative flow. No network traffic is sent.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="tech-stack-section" id="tech-stack" aria-labelledby="tech-stack-title" data-velocity-surface>
+      <div class="tech-stack-copy" data-reveal>
+        <span class="eyebrow">THE TOOLS UNDER THE HOOD</span>
+        <h2 id="tech-stack-title" data-flow-heading><span class="heading-line"><span class="heading-line-inner">Built with a</span></span><span class="heading-line"><span class="heading-line-inner">focused stack.</span></span></h2>
+        <p>Python and FastAPI power the service. React, Lenis, and GSAP shape the interface and its motion.</p>
+      </div>
+      <div class="tech-marquee" data-reveal role="group" aria-label="Technology used by NetGuard">
+        <div class="tech-marquee-track" aria-hidden="true">
+          <div class="tech-marquee-group">
+            <span class="tech-item"><svg class="tech-icon tech-icon--python" viewBox="0 0 24 24"><path d="M12 2.5c-4.6 0-4.2 2-4.2 2v2.1h4.3v.9H6.2S3 7.1 3 12s2.8 4.8 2.8 4.8h1.7v-2.3s-.1-2.8 2.8-2.8h4.7s2.6 0 2.6-2.5V5.2s.4-2.7-5.6-2.7Zm-2.4 2.1a.8.8 0 1 1 0 1.6.8.8 0 0 1 0-1.6Z" fill="#59a8df"></path><path d="M12 21.5c4.6 0 4.2-2 4.2-2v-2.1h-4.3v-.9h5.9s3.2.4 3.2-4.5-2.8-4.8-2.8-4.8h-1.7v2.3s.1 2.8-2.8 2.8H9s-2.6 0-2.6 2.5v4s-.4 2.7 5.6 2.7Zm2.4-2.1a.8.8 0 1 1 0-1.6.8.8 0 0 1 0 1.6Z" fill="#ffd343"></path></svg><strong>Python</strong></span>
+            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><path d="m13.4 2.5-9 11.1h6l-.8 7.9 11-12.5h-6.2l1.3-6.5h-2.3Z" fill="#62d6a7"></path></svg><strong>FastAPI</strong></span>
+            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="7.5" ry="3" fill="none" stroke="#79b9e8" stroke-width="1.7"></ellipse><path d="M4.5 5v13c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3V5M4.5 11.5c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3" fill="none" stroke="#79b9e8" stroke-width="1.7"></path></svg><strong>SQLite</strong></span>
+            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><g fill="none" stroke="#61d9ee" stroke-width="1.35"><ellipse cx="12" cy="12" rx="9" ry="3.6"></ellipse><ellipse cx="12" cy="12" rx="9" ry="3.6" transform="rotate(60 12 12)"></ellipse><ellipse cx="12" cy="12" rx="9" ry="3.6" transform="rotate(120 12 12)"></ellipse></g><circle cx="12" cy="12" r="1.5" fill="#61d9ee"></circle></svg><strong>React</strong></span>
+            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><path d="M2.5 8.5c3.2-3 6.1-3 9.3 0s6.1 3 9.7-.1M2.5 14c3.2-3 6.1-3 9.3 0s6.1 3 9.7-.1" fill="none" stroke="#a999ff" stroke-linecap="round" stroke-width="2"></path></svg><strong>Lenis</strong></span>
+            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><path d="M4 17.5 8.5 6h3L7 17.5h8L19 6h2l-4.5 11.5H4Z" fill="#8edb68"></path><path d="M8 14h8" stroke="#8edb68" stroke-width="1.6"></path></svg><strong>GSAP</strong></span>
+            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="#f4a65b" stroke-width="1.7"></circle><circle cx="12" cy="12" r="4.5" fill="none" stroke="#f4a65b" stroke-width="1.7"></circle><circle cx="12" cy="12" r="1.5" fill="#f4a65b"></circle></svg><strong>ScrollTrigger</strong></span>
+            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2.5" fill="none" stroke="#fa805e" stroke-width="1.7"></circle><circle cx="19" cy="6" r="2.5" fill="none" stroke="#fa805e" stroke-width="1.7"></circle><circle cx="19" cy="18" r="2.5" fill="none" stroke="#fa805e" stroke-width="1.7"></circle><path d="m7.3 11 9.4-4M7.3 13l9.4 4" stroke="#fa805e" stroke-width="1.7"></path></svg><strong>WebSocket</strong></span>
+          </div>
+          <div class="tech-marquee-group" aria-hidden="true">
+            <span class="tech-item"><svg class="tech-icon tech-icon--python" viewBox="0 0 24 24"><path d="M12 2.5c-4.6 0-4.2 2-4.2 2v2.1h4.3v.9H6.2S3 7.1 3 12s2.8 4.8 2.8 4.8h1.7v-2.3s-.1-2.8 2.8-2.8h4.7s2.6 0 2.6-2.5V5.2s.4-2.7-5.6-2.7Zm-2.4 2.1a.8.8 0 1 1 0 1.6.8.8 0 0 1 0-1.6Z" fill="#59a8df"></path><path d="M12 21.5c4.6 0 4.2-2 4.2-2v-2.1h-4.3v-.9h5.9s3.2.4 3.2-4.5-2.8-4.8-2.8-4.8h-1.7v2.3s.1 2.8-2.8 2.8H9s-2.6 0-2.6 2.5v4s-.4 2.7 5.6 2.7Zm2.4-2.1a.8.8 0 1 1 0-1.6.8.8 0 0 1 0 1.6Z" fill="#ffd343"></path></svg><strong>Python</strong></span>
+            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><path d="m13.4 2.5-9 11.1h6l-.8 7.9 11-12.5h-6.2l1.3-6.5h-2.3Z" fill="#62d6a7"></path></svg><strong>FastAPI</strong></span>
+            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="7.5" ry="3" fill="none" stroke="#79b9e8" stroke-width="1.7"></ellipse><path d="M4.5 5v13c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3V5M4.5 11.5c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3" fill="none" stroke="#79b9e8" stroke-width="1.7"></path></svg><strong>SQLite</strong></span>
+            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><g fill="none" stroke="#61d9ee" stroke-width="1.35"><ellipse cx="12" cy="12" rx="9" ry="3.6"></ellipse><ellipse cx="12" cy="12" rx="9" ry="3.6" transform="rotate(60 12 12)"></ellipse><ellipse cx="12" cy="12" rx="9" ry="3.6" transform="rotate(120 12 12)"></ellipse></g><circle cx="12" cy="12" r="1.5" fill="#61d9ee"></circle></svg><strong>React</strong></span>
+            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><path d="M2.5 8.5c3.2-3 6.1-3 9.3 0s6.1 3 9.7-.1M2.5 14c3.2-3 6.1-3 9.3 0s6.1 3 9.7-.1" fill="none" stroke="#a999ff" stroke-linecap="round" stroke-width="2"></path></svg><strong>Lenis</strong></span>
+            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><path d="M4 17.5 8.5 6h3L7 17.5h8L19 6h2l-4.5 11.5H4Z" fill="#8edb68"></path><path d="M8 14h8" stroke="#8edb68" stroke-width="1.6"></path></svg><strong>GSAP</strong></span>
+            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="#f4a65b" stroke-width="1.7"></circle><circle cx="12" cy="12" r="4.5" fill="none" stroke="#f4a65b" stroke-width="1.7"></circle><circle cx="12" cy="12" r="1.5" fill="#f4a65b"></circle></svg><strong>ScrollTrigger</strong></span>
+            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2.5" fill="none" stroke="#fa805e" stroke-width="1.7"></circle><circle cx="19" cy="6" r="2.5" fill="none" stroke="#fa805e" stroke-width="1.7"></circle><circle cx="19" cy="18" r="2.5" fill="none" stroke="#fa805e" stroke-width="1.7"></circle><path d="m7.3 11 9.4-4M7.3 13l9.4 4" stroke="#fa805e" stroke-width="1.7"></path></svg><strong>WebSocket</strong></span>
+          </div>
+        </div>
+        <ul class="tech-stack-list" aria-label="Technology stack">
+          <li>Python</li><li>FastAPI</li><li>SQLite</li><li>React</li>
+          <li>Lenis</li><li>GSAP</li><li>ScrollTrigger</li><li>WebSocket</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="contact-section" id="contact" aria-labelledby="contact-title" data-reveal>
+      <div id="contact-particles" class="contact-particles" aria-hidden="true"></div>
+      <div>
+        <span class="eyebrow">OPEN SOURCE PROJECT</span>
+        <h2 id="contact-title" data-flow-heading><span class="heading-line"><span class="heading-line-inner">Build the next</span></span><span class="heading-line"><span class="heading-line-inner">signal with us.</span></span></h2>
+        <p>Explore the code, follow the project, or open an issue with an idea or a bug report.</p>
+      </div>
+      <div class="contact-links">
+        <a class="button button-primary" href="https://github.com/sarthakk-10/int-detect" target="_blank" rel="noreferrer">View the GitHub repo <span class="button-arrow" aria-hidden="true">↗</span></a>
+        <a class="contact-issue-link" href="https://github.com/sarthakk-10/int-detect/issues" target="_blank" rel="noreferrer">Questions or ideas? Open an issue <span aria-hidden="true">↗</span></a>
+      </div>
+    </section>
   </main>
 
   <footer class="site-footer">
     <a class="brand footer-brand" href="/"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span>netguard<span class="brand-period">.</span></span></a>
     <p>Built for controlled network analysis and learning.</p>
-    <a class="footer-link" href="https://github.com/AmiteshBhardwaj/int-detect" target="_blank" rel="noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+    <a class="footer-link" href="https://github.com/sarthakk-10/int-detect" target="_blank" rel="noreferrer">GitHub <span aria-hidden="true">↗</span></a>
   </footer>
 
   <script defer src="/static/vendor/gsap.min.js?v=1"></script>
   <script defer src="/static/vendor/ScrollTrigger.min.js?v=1"></script>
-  <script defer src="/static/landing.js?v=24"></script>
-  <script type="module" src="/static/landing-assets/landing.js?v=25"></script>
+  <script defer src="/static/landing.js?v=20"></script>
+  <script type="module" src="/static/landing-assets/landing.js?v=15"></script>
   <div id="smooth-scroll-root" hidden></div>
 </body>
 </html>

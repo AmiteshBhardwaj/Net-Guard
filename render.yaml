@@ -2,7 +2,7 @@ services:
   - type: web
     name: netguard
     runtime: docker
-    plan: free
+    plan: free # Change to 'starter' ($7/mo) for native always-on compute with no idle spin-down
     dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /api/health
@@ -13,7 +13,7 @@ services:
       # Without it the service falls back to ephemeral SQLite (data lost on redeploy).
       - key: NETGUARD_DATABASE_URL
         sync: false
-      # Populate this with your Render service URL to enable the keep-alive ping.
+      # Optional: Explicit service URL for internal keep-alive loop (Render also auto-sets RENDER_EXTERNAL_URL).
       - key: NETGUARD_KEEP_ALIVE_URL
         sync: false
       # Allowed frontend origins (comma-separated). Set * or specific domain.
@@ -22,3 +22,4 @@ services:
       # Token the capture agent must send. Generate a long random string.
       - key: NETGUARD_AGENT_TOKEN
         sync: false
+

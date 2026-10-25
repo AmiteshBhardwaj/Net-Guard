@@ -33,7 +33,7 @@ RUN mkdir -p /app/data /app/models
 EXPOSE 8000
 
 # Health check verifying the FastAPI health endpoint
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8000}/api/health || exit 1
 
 # Start uvicorn with runtime dynamic $PORT expansion (required by Render)
