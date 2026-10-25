@@ -3,20 +3,33 @@ name: Keep Render Service Awake
 on:
   schedule:
     # Render free tier spins down after 15 minutes of inactivity.
-    # Run every 14 minutes to prevent idle spin-down.
-    - cron: '*/14 * * * *'
+    # Run every 10 minutes to maintain active status with safety buffer.
+    - cron: '*/10 * * * *'
   workflow_dispatch:
+
+concurrency:
+  group: keep-alive
+  cancel-in-progress: true
 
 jobs:
   keep-alive:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Ping Health Endpoint
         run: |
           TARGET_URL="${{ secrets.RENDER_EXTERNAL_URL || vars.RENDER_EXTERNAL_URL }}"
           if [ -z "$TARGET_URL" ]; then
-            echo "RENDER_EXTERNAL_URL is not configured in repository variables/secrets. Skipping ping."
-            exit 0
+            TARGET_URL="https://netguard.onrender.com"
+            echo "::notice ::RENDER_EXTERNAL_URL secret/variable not set; using default $TARGET_URL"
           fi
-          echo "Sending keep-alive ping to $TARGET_URL/api/health..."
-          curl -s -f -m 30 "$TARGET_URL/api/health" || echo "Ping attempted."
+          HEALTH_URL="${TARGET_URL%/}/api/health"
+          echo "Sending keep-alive ping to $HEALTH_URL..."
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -m 20 --retry 2 --retry-delay 3 "$HEALTH_URL" || echo "000")
+          echo "Healthcheck HTTP Status: $HTTP_STATUS"
+          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 400 ]; then
+            echo "Render service is awake and healthy."
+          else
+            echo "Warning: Healthcheck returned $HTTP_STATUS"
+          fi
+

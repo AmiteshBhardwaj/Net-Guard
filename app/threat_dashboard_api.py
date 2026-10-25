@@ -16,7 +16,24 @@ from app.threat_detector import IsolationThreatDetector
 
 router = APIRouter(prefix="/api/threat-dashboard", tags=["ThreatDashboard"])
 
-detector = IsolationThreatDetector(contamination=0.01, random_state=42, training_samples=1000)
+_detector: IsolationThreatDetector | None = None
+
+
+def get_detector() -> IsolationThreatDetector:
+    global _detector
+    if _detector is None:
+        _detector = IsolationThreatDetector(
+            contamination=0.01, random_state=42, training_samples=1000
+        )
+    return _detector
+
+
+class _LazyDetectorProxy:
+    def __getattr__(self, name: str) -> Any:
+        return getattr(get_detector(), name)
+
+
+detector = _LazyDetectorProxy()
 
 _broadcast_callback: Callable[[dict[str, Any]], Coroutine[Any, Any, None]] | None = None
 _db_context_fn: Callable[[], Any] | None = None

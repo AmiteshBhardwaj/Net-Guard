@@ -50,10 +50,14 @@ def load_model() -> Any:
         return None
 
 
-async def _keep_alive_task(target_url: str, interval_seconds: int = 420) -> None:
+async def _keep_alive_task(target_url: str, interval_seconds: int = 300) -> None:
     health_url = f"{target_url.rstrip('/')}/api/health"
-    logger.info("Keep-alive task started for %s (interval: %ds)", health_url, interval_seconds)
-    await asyncio.sleep(60)
+    logger.info(
+        "Keep-alive task started for %s (interval: %ds)",
+        health_url,
+        interval_seconds,
+    )
+    await asyncio.sleep(30)
     while True:
         try:
             loop = asyncio.get_running_loop()
@@ -64,7 +68,7 @@ async def _keep_alive_task(target_url: str, interval_seconds: int = 420) -> None
                         health_url,
                         headers={"User-Agent": "NetGuard-KeepAlive/1.0"},
                     ),
-                    timeout=15,
+                    timeout=10,
                 ).read(),
             )
             logger.info("Keep-alive ping sent to %s", health_url)
@@ -73,15 +77,69 @@ async def _keep_alive_task(target_url: str, interval_seconds: int = 420) -> None
         await asyncio.sleep(interval_seconds)
 
 
+@contextmanager
+def db():
+    connection = connect_database(DB_PATH)
+    try:
+        yield connection
+        connection.commit()
+    except Exception:
+        connection.rollback()
+        raise
+    finally:
+        connection.close()
+
+
+def init_db() -> None:
+    with db() as conn:
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS alerts (id TEXT PRIMARY KEY, ts DOUBLE PRECISION, src TEXT, dst TEXT, dport INTEGER, label TEXT, prob DOUBLE PRECISION, severity TEXT, reasons TEXT, blocked INTEGER, protocol TEXT)"
+        )
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS attacks (id TEXT PRIMARY KEY, ts DOUBLE PRECISION, attack TEXT, status TEXT, detected INTEGER DEFAULT 0)"
+        )
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS blocks (ip TEXT PRIMARY KEY, ts DOUBLE PRECISION)"
+        )
+        init_db_tables(conn)
+        ensure_blast_schema(conn)
+        seed_demo_topology(conn)
+
+
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     # Store the running event loop so the Scapy capture thread can schedule coroutines.
     application.state.loop = asyncio.get_running_loop()
     application.state.blast_service = BlastService(broadcast, db)
-    keep_alive_url = os.getenv("NETGUARD_KEEP_ALIVE_URL") or os.getenv("RENDER_EXTERNAL_URL")
+
+    # Initialize database in executor to avoid blocking port bind on remote DB connection
+    def _startup_db() -> None:
+        try:
+            init_db()
+            with db() as conn:
+                state["blocked"].update(
+                    row["ip"]
+                    for row in conn.execute("SELECT ip FROM blocks").fetchall()
+                )
+        except Exception as exc:
+            logger.warning("Database initialization deferred/failed: %s", exc)
+
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(None, _startup_db)
+
+    if engine.model is not None:
+        state["model_status"] = "trained model loaded"
+
+    keep_alive_url = (
+        os.getenv("NETGUARD_KEEP_ALIVE_URL")
+        or os.getenv("RENDER_EXTERNAL_URL")
+        or ""
+    ).strip()
     task = None
-    if keep_alive_url and keep_alive_url.strip():
-        task = asyncio.create_task(_keep_alive_task(keep_alive_url.strip()))
+    if keep_alive_url:
+        task = asyncio.create_task(
+            _keep_alive_task(keep_alive_url, interval_seconds=300)
+        )
     yield
     if task:
         task.cancel()
@@ -89,6 +147,9 @@ async def lifespan(application: FastAPI):
             await task
         except asyncio.CancelledError:
             pass
+    from app.database import close_connection_pool
+
+    close_connection_pool()
 
 
 engine = DecisionEngine(load_model(), whitelist=env_whitelist())
@@ -107,41 +168,16 @@ clients: set[WebSocket] = set()
 client_lock = asyncio.Lock()
 state_lock = threading.RLock()
 state: dict[str, Any] = {
-    "source": "demo", "interface": None, "packet_seconds": {},
-    "flows_processed": 0, "blocked": set(), "active_attack_id": None,
-    "active_attack_label": None, "model_status": "rules only",
+    "source": "demo",
+    "interface": None,
+    "packet_seconds": {},
+    "flows_processed": 0,
+    "blocked": set(),
+    "active_attack_id": None,
+    "active_attack_label": None,
+    "model_status": "rules only",
     "whitelist": sorted(engine.whitelist),
 }
-
-
-@contextmanager
-def db():
-    connection = connect_database(DB_PATH)
-    try:
-        yield connection
-        connection.commit()
-    except Exception:
-        connection.rollback()
-        raise
-    finally:
-        connection.close()
-
-
-def init_db() -> None:
-    with db() as conn:
-        conn.execute("CREATE TABLE IF NOT EXISTS alerts (id TEXT PRIMARY KEY, ts DOUBLE PRECISION, src TEXT, dst TEXT, dport INTEGER, label TEXT, prob DOUBLE PRECISION, severity TEXT, reasons TEXT, blocked INTEGER, protocol TEXT)")
-        conn.execute("CREATE TABLE IF NOT EXISTS attacks (id TEXT PRIMARY KEY, ts DOUBLE PRECISION, attack TEXT, status TEXT, detected INTEGER DEFAULT 0)")
-        conn.execute("CREATE TABLE IF NOT EXISTS blocks (ip TEXT PRIMARY KEY, ts DOUBLE PRECISION)")
-        init_db_tables(conn)
-        ensure_blast_schema(conn)
-        seed_demo_topology(conn)
-
-
-init_db()
-with db() as conn:
-    state["blocked"].update(row["ip"] for row in conn.execute("SELECT ip FROM blocks").fetchall())
-if engine.model is not None:
-    state["model_status"] = "trained model loaded"
 
 
 async def broadcast(payload: dict[str, Any]) -> None:
@@ -161,6 +197,7 @@ app.state.blast_service = BlastService(broadcast, db)
 set_broadcaster(broadcast)
 set_db_provider(db)
 app.include_router(threat_dashboard_router)
+
 
 
 def remember_packet(ts: float, count: int) -> None:
@@ -267,15 +304,17 @@ async def dashboard_page(request: Request) -> FileResponse:
 
 
 @app.get("/api/health")
-async def health() -> dict[str, str]:
+async def health(deep: bool = False) -> dict[str, str]:
+    if not deep:
+        return {"status": "ok", "service": "NetGuard"}
     db_status = "ok"
     try:
-        conn = connect_database(DB_PATH)
-        conn.execute("SELECT 1")
-        conn.close()
+        with db() as conn:
+            conn.execute("SELECT 1")
     except Exception as exc:
         db_status = f"unhealthy: {exc}"
     return {"status": "ok", "service": "NetGuard", "database": db_status}
+
 
 
 @app.get("/api/stats")
