@@ -1,0 +1,8 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+flask>=3.0
+scapy>=2.5
+numpy
+pandas
+joblib
+scikit-learn        # only needed once model/model.pkl exists

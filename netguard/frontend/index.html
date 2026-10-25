@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NetGuard: real-time network intrusion monitor</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div id="edge" aria-hidden="true"></div>
+
+<header class="top">
+  <div class="brand">
+    <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path d="M2 16h5l3-9 5 18 4-14 2 5h7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div><strong>NetGuard</strong><span>Network intrusion monitor</span></div>
+  </div>
+
+  <div class="seg" id="sources" role="group" aria-label="Traffic source">
+    <button data-src="demo">Simulated</button>
+    <button data-src="live">Live capture</button>
+    <button data-src="pcap">PCAP replay</button>
+    <button data-src="csv">CSV replay</button>
+  </div>
+
+  <label class="switch"><input type="checkbox" id="autoblock"><span class="track"></span>Auto-block high severity</label>
+
+  <div class="level" id="level" role="status" aria-live="polite"><i></i><span>Normal</span></div>
+</header>
+
+<div class="banner" id="banner" hidden></div>
+
+<main>
+  <section class="kpis" aria-label="Key numbers">
+    <div class="kpi"><b id="k-pps">0</b><span>Packets per second</span></div>
+    <div class="kpi"><b id="k-flows">0</b><span>Active flows</span></div>
+    <div class="kpi"><b id="k-alerts">0</b><span>Alerts raised</span></div>
+    <div class="kpi"><b id="k-blocked">0</b><span>Addresses blocked</span></div>
+    <div class="kpi hero"><b id="k-caught">0 of 0</b><span>Launched attacks caught</span></div>
+    <div class="kpi"><b id="k-latency">n/a</b><span>Median time to detect</span></div>
+  </section>
+
+  <section class="card chart">
+    <div class="card-head">
+      <h2>Traffic and response</h2>
+      <div class="legend">
+        <span><i class="sw normal"></i>Normal traffic</span>
+        <span><i class="sw flagged"></i>Flagged traffic</span>
+        <span><i class="sw launch"></i>Attack launched</span>
+        <span><i class="sw caught"></i>Caught</span>
+      </div>
+    </div>
+    <canvas id="chart" aria-label="Packets per second over the last 90 seconds, with attack launch and detection markers"></canvas>
+  </section>
+
+  <section class="card feed">
+    <div class="card-head"><h2>Alerts</h2><span class="muted" id="alert-sub">Newest first</span></div>
+    <ol id="alerts" class="alerts"></ol>
+    <p class="empty" id="alerts-empty">No alerts yet. Traffic looks normal. Use the buttons to run an attack and watch it appear here.</p>
+  </section>
+
+  <section class="card launch">
+    <div class="card-head"><h2>Run an attack</h2><span class="muted">Lab targets only</span></div>
+    <div class="btns">
+      <button class="go" data-atk="portscan">Run port scan</button>
+      <button class="go" data-atk="bruteforce">Run brute force</button>
+      <button class="go" data-atk="dos">Run DoS flood</button>
+      <button class="go quiet" data-atk="normal">Normal browsing</button>
+    </div>
+    <p class="note" id="launch-note"></p>
+    <ul class="runs" id="runs"></ul>
+    <button class="link" id="reset">Reset scoreboard</button>
+  </section>
+
+  <section class="card why">
+    <div class="card-head"><h2>Why it was flagged</h2><span class="muted" id="why-sub"></span></div>
+    <div id="why"><p class="empty">Select an alert to see the evidence behind it.</p></div>
+  </section>
+
+  <section class="card srcs">
+    <div class="card-head"><h2>Top sources</h2></div>
+    <table class="tbl"><thead><tr><th>Address</th><th>Alerts</th><th>Worst severity</th><th>Last seen</th><th></th></tr></thead>
+      <tbody id="srcs"></tbody></table>
+    <p class="empty" id="srcs-empty">No suspicious sources.</p>
+  </section>
+
+  <section class="card mdl">
+    <div class="card-head"><h2>Model results</h2><span class="muted">Offline test, not live</span></div>
+    <div id="model"><p class="empty">No trained model loaded yet. The dashboard is running on detection rules. Put model.pkl and metrics.json in the model folder to show scores here.</p></div>
+  </section>
+</main>
+
+<dialog id="dlg">
+  <form method="dialog" id="dlg-form">
+    <h3 id="dlg-title"></h3>
+    <label id="f-iface">Network interface <input name="iface" placeholder="Leave blank for the default"></label>
+    <label id="f-path">File inside the data folder <input name="path" placeholder="attack.pcap"></label>
+    <label id="f-speed">Speed <input name="speed" type="number" min="0.1" step="0.1" placeholder="1"></label>
+    <p class="note" id="dlg-note"></p>
+    <div class="row"><button value="cancel" class="quiet go">Cancel</button><button value="ok" class="go" id="dlg-ok">Start</button></div>
+  </form>
+</dialog>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

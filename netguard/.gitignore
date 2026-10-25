@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+data/netguard.db
+data/pipeline.log
+model/model.pkl
+.venv/
