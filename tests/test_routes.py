@@ -12,7 +12,7 @@ def test_landing_route_serves_standalone_landing_page():
     assert response_root.status_code == 200
     assert "Every alert" in response_root.text
     assert "has a trail" in response_root.text
-    assert "/dashboard" in response_root.text
+    assert "landing-root" in response_root.text
 
     response_landing = client.get("/landing")
     assert response_landing.status_code == 200
