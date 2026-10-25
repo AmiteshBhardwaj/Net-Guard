@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0b0b0d">
   <title>NetGuard — Network Threat Monitor</title>
-  <link rel="stylesheet" href="/static/dashboard-workspace.css?v=10">
+  <link rel="stylesheet" href="/static/dashboard-workspace.css?v=12">
   <link rel="stylesheet" href="/static/landing-assets/landing.css?v=16">
 </head>
 <body data-dashboard="overview">
@@ -81,12 +81,12 @@
             <section class="panel lab-safety"><span class="secure-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.5 20 7v5.4c0 4.5-3.1 7.1-8 8.6-4.9-1.5-8-4.1-8-8.6V7l8-3.5Z"/><path d="m8.5 12 2.2 2.2 4.8-5"/></svg></span><div><strong>Local simulation</strong><p>Scenarios create detector telemetry locally. No packets are sent to the target address.</p></div></section>
           </section>
 
-          <section class="dashboard-view" data-dashboard="blast-radius" aria-label="Blast radius dashboard" hidden>
+          <section class="dashboard-view" data-dashboard="exposure" aria-label="Asset exposure dashboard" hidden>
             <section class="panel blast-radius-panel" id="blast-radius-panel">
               <div class="panel-heading">
                 <div>
-                  <div class="panel-title">Blast radius map</div>
-                  <div class="panel-subtitle">Reachability, lateral movement, and likely next target</div>
+                  <div class="panel-title">Asset exposure map</div>
+                  <div class="panel-subtitle">Existing exposure summary for monitored systems</div>
                 </div>
                 <span class="small-badge" id="blast-badge">READY</span>
               </div>
@@ -116,6 +116,61 @@
               <div class="blast-footer">
                 <div class="blast-node-list" id="blast-node-list"></div>
               </div>
+            </section>
+          </section>
+
+          <section class="dashboard-view" data-dashboard="blast-radius" aria-label="Blast radius analysis" hidden>
+            <section class="panel blast-analysis">
+              <div class="blast-analysis__toolbar">
+                <div>
+                  <div class="panel-title">Potential attack-path analysis</div>
+                  <div class="panel-subtitle">Fictional local topology · reachability does not prove exploitability or compromise.</div>
+                </div>
+                <div class="blast-analysis__controls">
+                  <label for="blast-scenario">Demo scenario</label>
+                  <select id="blast-scenario">
+                    <option value="workstation-01">Workstation compromise</option>
+                    <option value="dmz-server">Web server compromise</option>
+                    <option value="isolated-workstation">Isolated endpoint</option>
+                  </select>
+                  <label for="blast-endpoint">Selected endpoint</label>
+                  <select id="blast-endpoint" aria-label="Select a blast radius starting endpoint"></select>
+                </div>
+              </div>
+              <div class="blast-metrics" aria-live="polite">
+                <article class="blast-metric"><span>Selected endpoint</span><strong id="blast-metric-endpoint">Loading…</strong><small id="blast-metric-endpoint-status">Starting endpoint</small></article>
+                <article class="blast-metric"><span>Potentially reachable assets</span><strong id="blast-metric-reachable">—</strong><small>Based on configured active links</small></article>
+                <article class="blast-metric blast-metric--critical"><span>Critical assets at risk</span><strong id="blast-metric-critical">—</strong><small>Criticality level 4 or 5</small></article>
+                <article class="blast-metric"><span>Maximum reachability hops</span><strong id="blast-metric-hops">—</strong><small>Shortest-path hop count</small></article>
+              </div>
+              <div class="blast-analysis__layout">
+                <section class="blast-graph-panel" aria-label="Interactive network topology">
+                  <div class="blast-graph-panel__head">
+                    <div><strong>Network topology</strong><span>Click a node to inspect its details and path.</span></div>
+                    <div class="blast-graph-panel__zoom" role="group" aria-label="Graph zoom controls">
+                      <button type="button" id="blast-zoom-out" aria-label="Zoom out">−</button>
+                      <button type="button" id="blast-zoom-reset" aria-label="Reset graph view">Reset view</button>
+                      <button type="button" id="blast-zoom-in" aria-label="Zoom in">+</button>
+                    </div>
+                  </div>
+                  <div class="blast-graph" id="blast-graph" aria-live="polite"><p class="blast-empty">Loading fictional network topology…</p></div>
+                  <div class="blast-legend" aria-label="Topology legend">
+                    <span><i class="legend-origin"></i>Selected endpoint</span>
+                    <span><i class="legend-direct"></i>1 hop</span>
+                    <span><i class="legend-indirect"></i>2+ hops</span>
+                    <span><i class="legend-critical">!</i>Critical asset</span>
+                    <span><i class="legend-muted"></i>Unreachable</span>
+                  </div>
+                  <p class="blast-disclaimer">Arrows follow configured link direction. This is a simulated reachability model, not evidence of an active attack or confirmed compromise.</p>
+                </section>
+                <aside class="blast-details" aria-labelledby="blast-details-title">
+                  <div class="eyebrow">Asset details</div>
+                  <h2 id="blast-details-title">Select a topology node</h2>
+                  <div id="blast-details-content"><p>Choose an asset to see its status, connections, path, and recommended defensive action.</p></div>
+                </aside>
+              </div>
+              <div class="blast-risk-summary" id="blast-risk-summary" role="status">Reachability summary will appear when the topology is loaded.</div>
+              <p class="blast-fallback-note">Alerts without a matching asset ID or destination address use the fictional Employee Workstation as the documented demo fallback endpoint.</p>
             </section>
           </section>
 
@@ -165,7 +220,7 @@
   <div class="toast" id="toast" role="status"></div>
   <div id="dashboard-specular-root" hidden></div>
   <script src="/static/netguard-runtime-config.js"></script>
-  <script src="/static/dashboard.js?v=11"></script>
-  <script type="module" src="/static/landing-assets/landing.js?v=22"></script>
+  <script src="/static/dashboard.js?v=13"></script>
+  <script type="module" src="/static/landing-assets/landing.js?v=23"></script>
 </body>
 </html>
