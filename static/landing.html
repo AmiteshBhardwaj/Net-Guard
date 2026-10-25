@@ -6,42 +6,32 @@
   <meta name="theme-color" content="#0b0b0d">
   <meta name="description" content="Follow network flows from first signal to detector decision. Explore NetGuard's safe lab, alert explanations, and local PCAP replay.">
   <title>NetGuard — Every alert has a trail</title>
-  <link rel="stylesheet" href="/static/landing.css?v=23">
-  <link rel="stylesheet" href="/static/landing-assets/landing.css?v=11">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/landing.css?v=24">
+  <link rel="stylesheet" href="/static/landing-assets/landing.css?v=31">
   <link rel="stylesheet" href="/static/netguard-agentory.css?v=10">
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
   <div class="page-progress" aria-hidden="true"><span id="page-progress-bar"></span></div>
 
-  <header class="site-header">
-    <div class="header-inner">
-      <a class="brand" href="/" aria-label="NetGuard home">
-        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
-        <span>netguard<span class="brand-period">.</span></span>
-      </a>
-      <div class="header-actions">
-        <a class="button button-header" href="/dashboard">
-          Open traffic desk <span class="button-arrow" aria-hidden="true">↗</span>
-        </a>
-      </div>
-    </div>
-  </header>
-
-  <main id="main" class="landing-main" style="min-height: calc(100vh - 160px); position: relative; width: 100%;">
+  <main id="main" class="landing-main" style="min-height: calc(100vh - 80px); position: relative; width: 100%;">
     <div id="landing-root"></div>
   </main>
 
   <footer class="site-footer">
     <a class="brand footer-brand" href="/"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span>netguard<span class="brand-period">.</span></span></a>
     <p>Built for controlled network analysis and learning.</p>
+    <a class="footer-link" href="/dashboard">Dashboard <span aria-hidden="true">↗</span></a>
     <a class="footer-link" href="https://github.com/AmiteshBhardwaj/int-detect" target="_blank" rel="noreferrer">GitHub <span aria-hidden="true">↗</span></a>
   </footer>
 
   <script defer src="/static/vendor/gsap.min.js?v=1"></script>
   <script defer src="/static/vendor/ScrollTrigger.min.js?v=1"></script>
   <script defer src="/static/landing.js?v=24"></script>
-  <script type="module" src="/static/landing-assets/landing.js?v=25"></script>
+  <script type="module" src="/static/landing-assets/landing.js?v=31"></script>
   <div id="smooth-scroll-root" hidden></div>
 </body>
 </html>
