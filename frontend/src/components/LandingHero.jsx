@@ -8,6 +8,7 @@ import { TextCycle } from '@/components/wensity/text-cycle.tsx';
 import InfiniteMenu from './InfiniteMenu.jsx';
 import PrismaticBurst from './PrismaticBurst.jsx';
 import PillNav from './PillNav.jsx';
+import SpecularButton from './SpecularButton.jsx';
 
 const ShieldLogo = (
   <svg
@@ -32,8 +33,7 @@ const ShieldLogo = (
 const navItems = [
   { label: 'Overview', href: '#overview' },
   { label: 'Capabilities', href: '#capabilities' },
-  { label: 'Stream Pipeline', href: '#pipeline' },
-  { label: 'Dashboard', href: '/dashboard' }
+  { label: 'Stream Pipeline', href: '#pipeline' }
 ];
 
 const menuItems = [
@@ -305,6 +305,34 @@ export default function LandingHero() {
                     />
                   </Suspense>
                 </ErrorBoundary>
+              </div>
+            </AnimatedContent>
+
+            {/* SpecularButton CTA */}
+            <AnimatedContent distance={24} direction="vertical" duration={0.8} delay={0.35}>
+              <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'center' }}>
+                <SpecularButton
+                  size="lg"
+                  radius={18}
+                  tint="#ffffff"
+                  tintOpacity={0.05}
+                  textColor="#f5f5f5"
+                  lineColor="#38bdf8"
+                  baseColor="#334155"
+                  intensity={1.2}
+                  idleIntensity={0.4}
+                  shineSize={12}
+                  shineFade={34}
+                  thickness={1.2}
+                  glow={1}
+                  followMouse
+                  proximity={250}
+                  onClick={() => {
+                    window.location.href = '/dashboard';
+                  }}
+                >
+                  Enter Dashboard
+                </SpecularButton>
               </div>
             </AnimatedContent>
           </div>
