@@ -90,28 +90,28 @@
 
   const scenarios = {
     portscan: {
-      description: 'One device probes many ports in seconds, checking which services respond. NetGuard groups those attempts by source and time window, then flags the behavior when the 50-port rule is met.',
+      description: 'A single source probes numerous destination ports within seconds. NetGuard aggregates flows by source IP and flags the behavior when exceeding the 50-port threshold.',
       pattern: '50+ ports · 5 seconds',
-      observed: 'Many destination ports from one source.',
-      evaluated: 'Check for 50+ destination ports within five seconds.',
-      result: 'Review the port-scan rule match in the alert log.',
+      observed: 'Rapid connection attempts across multiple destination ports.',
+      evaluated: 'Rule check: >= 50 unique ports probed within 5 seconds.',
+      result: 'Alert raised: Port scan detected with source IP attribution.',
       event: 'Port scan detected',
     },
     bruteforce: {
-      description: 'Repeated failed sign-ins from one source can signal password guessing. The demo groups the attempts together so the event reads as one behavior instead of a noisy list of separate failures.',
-      pattern: 'Repeated failures · one source',
-      observed: 'Several login failures share one source.',
-      evaluated: 'Group repeated failures by source.',
-      result: 'Review the brute-force detection and source details.',
-      event: 'Repeated login failures',
+      description: 'Repeated failed authentication attempts against a target service indicate credential-stuffing or password guessing. NetGuard correlates auth bursts to isolate attack origins.',
+      pattern: 'Repeated auth failures · single IP',
+      observed: 'High volume of failed login attempts from a single source IP.',
+      evaluated: 'Rule check: Failed authentication attempts exceed window threshold.',
+      result: 'Alert raised: Brute force attack logged with targeted service & IP.',
+      event: 'Brute force attack detected',
     },
     burst: {
-      description: 'A sudden rise in requests can overwhelm a service or hide another action. NetGuard compares the short-window count with its threshold, then records the burst as one event that is easier to review.',
+      description: 'Sudden traffic spikes or volumetric packet floods designed to saturate bandwidth or exhaust service resources. NetGuard calculates packet rates and flags abnormal bursts.',
       pattern: '60+ requests · 5 seconds',
-      observed: 'A high request count appears in a brief interval.',
-      evaluated: 'Check for 60+ requests within five seconds.',
-      result: 'Review the request-burst event in the alert log.',
-      event: 'Request burst detected',
+      observed: 'Sudden surge in forward packet rate from one or more origins.',
+      evaluated: 'Rule check: Forward flow packet rate exceeds 60 requests in 5 seconds.',
+      result: 'Alert raised: Volumetric traffic burst / DoS event triggered.',
+      event: 'Request burst / DoS detected',
     },
   };
 

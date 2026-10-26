@@ -428,6 +428,10 @@ body { background: var(--page); }
 .tech-item:nth-child(6) .tech-icon { animation-delay: -2s; }
 .tech-item:nth-child(7) .tech-icon { animation-delay: -2.4s; }
 .tech-item:nth-child(8) .tech-icon { animation-delay: -2.8s; }
+.tech-item:nth-child(9) .tech-icon { animation-delay: -3.2s; }
+.tech-item:nth-child(10) .tech-icon { animation-delay: -3.6s; }
+.tech-item:nth-child(11) .tech-icon { animation-delay: -4s; }
+.tech-item:nth-child(12) .tech-icon { animation-delay: -4.4s; }
 .tech-marquee:hover .tech-marquee-track { animation-play-state: paused; }
 .tech-stack-list { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); clip-path: inset(50%); white-space: nowrap; }
 @keyframes earth-dashes-forward { to { stroke-dashoffset: -1313; } }

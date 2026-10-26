@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0b0b0d">
-  <meta name="description" content="Follow network flows from first signal to detector decision. Explore NetGuard's safe lab, alert explanations, and local PCAP replay.">
-  <title>NetGuard — Every alert has a trail</title>
+  <meta name="description" content="Real-time network threat monitoring and intrusion detection system. Analyze packet flows, detect attacks with explainable rules, and inspect live alerts.">
+  <title>NetGuard — Network Threat Monitoring & Intrusion Detection</title>
   <link rel="stylesheet" href="/static/landing.css?v=23">
   <link rel="stylesheet" href="/static/landing-assets/landing.css?v=10">
   <link rel="stylesheet" href="/static/netguard-agentory.css?v=9">
@@ -22,7 +22,7 @@
       </a>
       <div class="header-actions">
         <a class="button button-header" href="/dashboard">
-          Open traffic desk <span class="button-arrow" aria-hidden="true">↗</span>
+          Open dashboard <span class="button-arrow" aria-hidden="true">↗</span>
         </a>
       </div>
     </div>
@@ -94,18 +94,14 @@
         </div>
       </div>
       <div class="hero-copy">
-        <div class="eyebrow intro-item"><span class="eyebrow-pulse" aria-hidden="true"></span> Network signals, made legible</div>
-        <h1 class="hero-title" id="hero-title"><span class="title-line"><span class="title-line-inner">Every alert</span></span><span class="title-line hero-title-accent"><span class="title-line-inner">has a trail</span></span></h1>
-        <p class="hero-description intro-item">Follow a network flow from first signal to rule match, with the evidence still in view.</p>
+        <div class="eyebrow intro-item"><span class="eyebrow-pulse" aria-hidden="true"></span> Real-time network threat monitoring</div>
+        <h1 class="hero-title" id="hero-title"><span class="title-line"><span class="title-line-inner">NetGuard<span class="hero-title-period">.</span></span></span><span class="title-line hero-title-accent"><span class="title-line-inner">Analyze traffic, catch attacks, see alerts.</span></span></h1>
+        <p class="hero-description intro-item">Real-time packet inspection and explainable intrusion detection for local networks.</p>
         <div class="hero-actions intro-item">
           <a class="button button-primary" href="/dashboard">
-            Open the traffic desk <span class="button-arrow" aria-hidden="true">↗</span>
+            Open dashboard <span class="button-arrow" aria-hidden="true">↗</span>
           </a>
-          <a class="button button-quiet" href="#workflow">See how a flow moves <span aria-hidden="true">↓</span></a>
-        </div>
-        <div class="hero-annotation intro-item">
-          <span class="annotation-mark" aria-hidden="true">i</span>
-          <p>Lab scenarios create labeled events inside NetGuard. They do not send network traffic.</p>
+          <a class="button button-quiet" href="#workflow">Explore detection rules <span aria-hidden="true">↓</span></a>
         </div>
       </div>
     </section>
@@ -113,10 +109,10 @@
     <section class="workflow-section" id="workflow" aria-labelledby="workflow-title" data-velocity-surface>
       <div class="section-heading workflow-heading" data-reveal>
         <div>
-          <span class="eyebrow">THE EVENT PATH</span>
-          <h2 id="workflow-title" data-flow-heading><span class="heading-line"><span class="heading-line-inner">From raw signal</span></span><span class="heading-line"><span class="heading-line-inner">to readable reason.</span></span></h2>
+          <span class="eyebrow">DETECTION PIPELINE & RULES</span>
+          <h2 id="workflow-title" data-flow-heading><span class="heading-line"><span class="heading-line-inner">From packet capture</span></span><span class="heading-line"><span class="heading-line-inner">to verified alerts.</span></span></h2>
         </div>
-        <p>Pick a behavior to see how NetGuard groups a flow, checks a rule, and records the result.</p>
+        <p>Select an attack scenario to see how NetGuard extracts flow metrics, evaluates threshold rules, and flags malicious traffic.</p>
       </div>
 
       <div class="walkthrough" data-reveal data-story-stage="0">
@@ -152,8 +148,8 @@
             <div class="scenario-summary-main">
               <span class="scenario-summary-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 12h3l2.2-5 4.1 10 2.3-5H21"></path><circle cx="8.2" cy="7" r="1"></circle><circle cx="12.3" cy="17" r="1"></circle></svg></span>
               <div class="scenario-summary-copy">
-                <div class="scenario-summary-topline"><span>WHY THIS STANDS OUT</span><span class="scenario-summary-status"><i></i> RULE SIGNAL</span></div>
-                <p id="scenario-description">One device probes many ports in seconds, checking which services respond. NetGuard groups those attempts by source and time window, then flags the behavior when the 50-port rule is met.</p>
+                <div class="scenario-summary-topline"><span>THRESHOLD ANALYSIS</span><span class="scenario-summary-status"><i></i> RULE SIGNAL</span></div>
+                <p id="scenario-description">A single source probes numerous destination ports within seconds. NetGuard aggregates flows by source IP and flags the behavior when exceeding the 50-port threshold.</p>
                 <div class="scenario-pattern"><span>Pattern</span><strong id="scenario-pattern">50+ ports · 5 seconds</strong></div>
               </div>
             </div>
@@ -162,54 +158,63 @@
           <div class="flow-steps">
             <div class="flow-step is-current" data-step="0">
               <div class="step-symbol symbol-flow" aria-hidden="true"><i></i><i></i><i></i></div>
-              <div class="step-copy"><h4>Observe</h4><p id="walkthrough-observed">Many destination ports from one source.</p></div>
+              <div class="step-copy"><h4>Observe</h4><p id="walkthrough-observed">Rapid connection attempts across multiple destination ports.</p></div>
             </div>
             <div class="flow-step" data-step="1">
               <div class="step-symbol symbol-check" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m6 12 4 4 8-9"></path></svg></div>
-              <div class="step-copy"><h4>Evaluate</h4><p id="walkthrough-evaluated">Check for 50+ destination ports within five seconds.</p></div>
+              <div class="step-copy"><h4>Evaluate</h4><p id="walkthrough-evaluated">Rule check: >= 50 unique ports probed within 5 seconds.</p></div>
             </div>
             <div class="flow-step" data-step="2">
               <div class="step-symbol symbol-event" aria-hidden="true"><i></i></div>
-              <div class="step-copy"><h4>Review</h4><p id="walkthrough-result">Review the port-scan rule match in the alert log.</p></div>
+              <div class="step-copy"><h4>Review</h4><p id="walkthrough-result">Alert raised: Port scan detected with source IP attribution.</p></div>
             </div>
           </div>
-          <p class="walkthrough-note">A short, illustrative flow. No network traffic is sent.</p>
+          <p class="walkthrough-note">Lab simulation evaluates internal flow logic. No external network packets are sent.</p>
         </div>
       </div>
     </section>
 
     <section class="tech-stack-section" id="tech-stack" aria-labelledby="tech-stack-title" data-velocity-surface>
       <div class="tech-stack-copy" data-reveal>
-        <span class="eyebrow">THE TOOLS UNDER THE HOOD</span>
-        <h2 id="tech-stack-title" data-flow-heading><span class="heading-line"><span class="heading-line-inner">Built with a</span></span><span class="heading-line"><span class="heading-line-inner">focused stack.</span></span></h2>
-        <p>Python and FastAPI power the service. React, Lenis, and GSAP shape the interface and its motion.</p>
+        <span class="eyebrow">CORE ARCHITECTURE</span>
+        <h2 id="tech-stack-title" data-flow-heading><span class="heading-line"><span class="heading-line-inner">Engineered for</span></span><span class="heading-line"><span class="heading-line-inner">real-time inspection.</span></span></h2>
+        <p>FastAPI and Scapy drive live packet capture and flow aggregation, paired with Scikit-Learn machine learning, SQLite/PostgreSQL persistence, and a real-time React &amp; React Bits dashboard.</p>
       </div>
       <div class="tech-marquee" data-reveal role="group" aria-label="Technology used by NetGuard">
         <div class="tech-marquee-track" aria-hidden="true">
           <div class="tech-marquee-group">
             <span class="tech-item"><svg class="tech-icon tech-icon--python" viewBox="0 0 24 24"><path d="M12 2.5c-4.6 0-4.2 2-4.2 2v2.1h4.3v.9H6.2S3 7.1 3 12s2.8 4.8 2.8 4.8h1.7v-2.3s-.1-2.8 2.8-2.8h4.7s2.6 0 2.6-2.5V5.2s.4-2.7-5.6-2.7Zm-2.4 2.1a.8.8 0 1 1 0 1.6.8.8 0 0 1 0-1.6Z" fill="#59a8df"></path><path d="M12 21.5c4.6 0 4.2-2 4.2-2v-2.1h-4.3v-.9h5.9s3.2.4 3.2-4.5-2.8-4.8-2.8-4.8h-1.7v2.3s.1 2.8-2.8 2.8H9s-2.6 0-2.6 2.5v4s-.4 2.7 5.6 2.7Zm2.4-2.1a.8.8 0 1 1 0-1.6.8.8 0 0 1 0 1.6Z" fill="#ffd343"></path></svg><strong>Python</strong></span>
             <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><path d="m13.4 2.5-9 11.1h6l-.8 7.9 11-12.5h-6.2l1.3-6.5h-2.3Z" fill="#62d6a7"></path></svg><strong>FastAPI</strong></span>
+            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><path d="M12 2 3 7l9 5 9-5-9-5Z" fill="#ff7043"></path><path d="M3 12l9 5 9-5M3 17l9 5 9-5" fill="none" stroke="#ff8a65" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg><strong>Scapy</strong></span>
+            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3" fill="#f89938"></circle><circle cx="18" cy="6" r="3" fill="#389dd7"></circle><circle cx="12" cy="18" r="3" fill="#f89938"></circle><path d="M7.8 7.8l3.4 7.4M16.2 7.8l-3.4 7.4" stroke="#8fa0b5" stroke-width="1.6"></path></svg><strong>Scikit-Learn</strong></span>
+            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><rect x="4" y="9" width="3" height="3" fill="#38a9f5"></rect><rect x="8" y="9" width="3" height="3" fill="#38a9f5"></rect><rect x="12" y="9" width="3" height="3" fill="#38a9f5"></rect><rect x="8" y="5" width="3" height="3" fill="#38a9f5"></rect><path d="M2 13c1 0 2.5 1 4 1s3-1 4-1 2.5 1 4 1 3-1 4-1 2.5 1 4 1c0 4-4 7-10 7S2 17 2 13Z" fill="none" stroke="#38a9f5" stroke-width="1.6"></path></svg><strong>Docker</strong></span>
             <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="7.5" ry="3" fill="none" stroke="#79b9e8" stroke-width="1.7"></ellipse><path d="M4.5 5v13c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3V5M4.5 11.5c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3" fill="none" stroke="#79b9e8" stroke-width="1.7"></path></svg><strong>SQLite</strong></span>
+            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><path d="M12 2C7.5 2 4 4.5 4 8c0 2.2 1.4 4.1 3.5 5.2V19l3.5-2h2c4.5 0 7-2.5 7-6 0-3.5-3.5-6-8-6Z" fill="none" stroke="#5fa5d9" stroke-width="1.6"></path><circle cx="9" cy="8" r="1.2" fill="#5fa5d9"></circle><path d="M15 13c-1.5 1-3 1-5 0" stroke="#5fa5d9" stroke-width="1.4"></path></svg><strong>PostgreSQL</strong></span>
             <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><g fill="none" stroke="#61d9ee" stroke-width="1.35"><ellipse cx="12" cy="12" rx="9" ry="3.6"></ellipse><ellipse cx="12" cy="12" rx="9" ry="3.6" transform="rotate(60 12 12)"></ellipse><ellipse cx="12" cy="12" rx="9" ry="3.6" transform="rotate(120 12 12)"></ellipse></g><circle cx="12" cy="12" r="1.5" fill="#61d9ee"></circle></svg><strong>React</strong></span>
-            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><path d="M2.5 8.5c3.2-3 6.1-3 9.3 0s6.1 3 9.7-.1M2.5 14c3.2-3 6.1-3 9.3 0s6.1 3 9.7-.1" fill="none" stroke="#a999ff" stroke-linecap="round" stroke-width="2"></path></svg><strong>Lenis</strong></span>
+            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><path d="m12 2 2.6 6.4L21 11l-5.4 3.8L17 21l-5-4.2-5 4.2 1.4-6.2L3 11l6.4-2.6L12 2Z" fill="none" stroke="#ec4899" stroke-width="1.6" stroke-linejoin="round"></path><circle cx="12" cy="11.5" r="1.8" fill="#f472b6"></circle></svg><strong>React Bits</strong></span>
             <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><path d="M4 17.5 8.5 6h3L7 17.5h8L19 6h2l-4.5 11.5H4Z" fill="#8edb68"></path><path d="M8 14h8" stroke="#8edb68" stroke-width="1.6"></path></svg><strong>GSAP</strong></span>
-            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="#f4a65b" stroke-width="1.7"></circle><circle cx="12" cy="12" r="4.5" fill="none" stroke="#f4a65b" stroke-width="1.7"></circle><circle cx="12" cy="12" r="1.5" fill="#f4a65b"></circle></svg><strong>ScrollTrigger</strong></span>
+            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><path d="M2.5 8.5c3.2-3 6.1-3 9.3 0s6.1 3 9.7-.1M2.5 14c3.2-3 6.1-3 9.3 0s6.1 3 9.7-.1" fill="none" stroke="#a999ff" stroke-linecap="round" stroke-width="2"></path></svg><strong>Lenis</strong></span>
             <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2.5" fill="none" stroke="#fa805e" stroke-width="1.7"></circle><circle cx="19" cy="6" r="2.5" fill="none" stroke="#fa805e" stroke-width="1.7"></circle><circle cx="19" cy="18" r="2.5" fill="none" stroke="#fa805e" stroke-width="1.7"></circle><path d="m7.3 11 9.4-4M7.3 13l9.4 4" stroke="#fa805e" stroke-width="1.7"></path></svg><strong>WebSocket</strong></span>
           </div>
           <div class="tech-marquee-group" aria-hidden="true">
             <span class="tech-item"><svg class="tech-icon tech-icon--python" viewBox="0 0 24 24"><path d="M12 2.5c-4.6 0-4.2 2-4.2 2v2.1h4.3v.9H6.2S3 7.1 3 12s2.8 4.8 2.8 4.8h1.7v-2.3s-.1-2.8 2.8-2.8h4.7s2.6 0 2.6-2.5V5.2s.4-2.7-5.6-2.7Zm-2.4 2.1a.8.8 0 1 1 0 1.6.8.8 0 0 1 0-1.6Z" fill="#59a8df"></path><path d="M12 21.5c4.6 0 4.2-2 4.2-2v-2.1h-4.3v-.9h5.9s3.2.4 3.2-4.5-2.8-4.8-2.8-4.8h-1.7v2.3s.1 2.8-2.8 2.8H9s-2.6 0-2.6 2.5v4s-.4 2.7 5.6 2.7Zm2.4-2.1a.8.8 0 1 1 0-1.6.8.8 0 0 1 0 1.6Z" fill="#ffd343"></path></svg><strong>Python</strong></span>
             <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><path d="m13.4 2.5-9 11.1h6l-.8 7.9 11-12.5h-6.2l1.3-6.5h-2.3Z" fill="#62d6a7"></path></svg><strong>FastAPI</strong></span>
+            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><path d="M12 2 3 7l9 5 9-5-9-5Z" fill="#ff7043"></path><path d="M3 12l9 5 9-5M3 17l9 5 9-5" fill="none" stroke="#ff8a65" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg><strong>Scapy</strong></span>
+            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3" fill="#f89938"></circle><circle cx="18" cy="6" r="3" fill="#389dd7"></circle><circle cx="12" cy="18" r="3" fill="#f89938"></circle><path d="M7.8 7.8l3.4 7.4M16.2 7.8l-3.4 7.4" stroke="#8fa0b5" stroke-width="1.6"></path></svg><strong>Scikit-Learn</strong></span>
+            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><rect x="4" y="9" width="3" height="3" fill="#38a9f5"></rect><rect x="8" y="9" width="3" height="3" fill="#38a9f5"></rect><rect x="12" y="9" width="3" height="3" fill="#38a9f5"></rect><rect x="8" y="5" width="3" height="3" fill="#38a9f5"></rect><path d="M2 13c1 0 2.5 1 4 1s3-1 4-1 2.5 1 4 1 3-1 4-1 2.5 1 4 1c0 4-4 7-10 7S2 17 2 13Z" fill="none" stroke="#38a9f5" stroke-width="1.6"></path></svg><strong>Docker</strong></span>
             <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="7.5" ry="3" fill="none" stroke="#79b9e8" stroke-width="1.7"></ellipse><path d="M4.5 5v13c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3V5M4.5 11.5c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3" fill="none" stroke="#79b9e8" stroke-width="1.7"></path></svg><strong>SQLite</strong></span>
+            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><path d="M12 2C7.5 2 4 4.5 4 8c0 2.2 1.4 4.1 3.5 5.2V19l3.5-2h2c4.5 0 7-2.5 7-6 0-3.5-3.5-6-8-6Z" fill="none" stroke="#5fa5d9" stroke-width="1.6"></path><circle cx="9" cy="8" r="1.2" fill="#5fa5d9"></circle><path d="M15 13c-1.5 1-3 1-5 0" stroke="#5fa5d9" stroke-width="1.4"></path></svg><strong>PostgreSQL</strong></span>
             <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><g fill="none" stroke="#61d9ee" stroke-width="1.35"><ellipse cx="12" cy="12" rx="9" ry="3.6"></ellipse><ellipse cx="12" cy="12" rx="9" ry="3.6" transform="rotate(60 12 12)"></ellipse><ellipse cx="12" cy="12" rx="9" ry="3.6" transform="rotate(120 12 12)"></ellipse></g><circle cx="12" cy="12" r="1.5" fill="#61d9ee"></circle></svg><strong>React</strong></span>
-            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><path d="M2.5 8.5c3.2-3 6.1-3 9.3 0s6.1 3 9.7-.1M2.5 14c3.2-3 6.1-3 9.3 0s6.1 3 9.7-.1" fill="none" stroke="#a999ff" stroke-linecap="round" stroke-width="2"></path></svg><strong>Lenis</strong></span>
+            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><path d="m12 2 2.6 6.4L21 11l-5.4 3.8L17 21l-5-4.2-5 4.2 1.4-6.2L3 11l6.4-2.6L12 2Z" fill="none" stroke="#ec4899" stroke-width="1.6" stroke-linejoin="round"></path><circle cx="12" cy="11.5" r="1.8" fill="#f472b6"></circle></svg><strong>React Bits</strong></span>
             <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><path d="M4 17.5 8.5 6h3L7 17.5h8L19 6h2l-4.5 11.5H4Z" fill="#8edb68"></path><path d="M8 14h8" stroke="#8edb68" stroke-width="1.6"></path></svg><strong>GSAP</strong></span>
-            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5" fill="none" stroke="#f4a65b" stroke-width="1.7"></circle><circle cx="12" cy="12" r="4.5" fill="none" stroke="#f4a65b" stroke-width="1.7"></circle><circle cx="12" cy="12" r="1.5" fill="#f4a65b"></circle></svg><strong>ScrollTrigger</strong></span>
+            <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><path d="M2.5 8.5c3.2-3 6.1-3 9.3 0s6.1 3 9.7-.1M2.5 14c3.2-3 6.1-3 9.3 0s6.1 3 9.7-.1" fill="none" stroke="#a999ff" stroke-linecap="round" stroke-width="2"></path></svg><strong>Lenis</strong></span>
             <span class="tech-item"><svg class="tech-icon" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2.5" fill="none" stroke="#fa805e" stroke-width="1.7"></circle><circle cx="19" cy="6" r="2.5" fill="none" stroke="#fa805e" stroke-width="1.7"></circle><circle cx="19" cy="18" r="2.5" fill="none" stroke="#fa805e" stroke-width="1.7"></circle><path d="m7.3 11 9.4-4M7.3 13l9.4 4" stroke="#fa805e" stroke-width="1.7"></path></svg><strong>WebSocket</strong></span>
           </div>
         </div>
         <ul class="tech-stack-list" aria-label="Technology stack">
-          <li>Python</li><li>FastAPI</li><li>SQLite</li><li>React</li>
-          <li>Lenis</li><li>GSAP</li><li>ScrollTrigger</li><li>WebSocket</li>
+          <li>Python</li><li>FastAPI</li><li>Scapy</li><li>Scikit-Learn</li>
+          <li>Docker</li><li>SQLite</li><li>PostgreSQL</li><li>React</li>
+          <li>React Bits</li><li>GSAP</li><li>Lenis</li><li>WebSocket</li>
         </ul>
       </div>
     </section>
@@ -218,11 +223,11 @@
       <div id="contact-particles" class="contact-particles" aria-hidden="true"></div>
       <div>
         <span class="eyebrow">OPEN SOURCE PROJECT</span>
-        <h2 id="contact-title" data-flow-heading><span class="heading-line"><span class="heading-line-inner">Build the next</span></span><span class="heading-line"><span class="heading-line-inner">signal with us.</span></span></h2>
-        <p>Explore the code, follow the project, or open an issue with an idea or a bug report.</p>
+        <h2 id="contact-title" data-flow-heading><span class="heading-line"><span class="heading-line-inner">Open source</span></span><span class="heading-line"><span class="heading-line-inner">network defense.</span></span></h2>
+        <p>NetGuard is fully open source under MIT. Inspect the rule engine, replay custom PCAP traces, or contribute new detection signatures.</p>
       </div>
       <div class="contact-links">
-        <a class="button button-primary" href="https://github.com/sarthakk-10/int-detect" target="_blank" rel="noreferrer">View the GitHub repo <span class="button-arrow" aria-hidden="true">↗</span></a>
+        <a class="button button-primary" href="https://github.com/sarthakk-10/int-detect" target="_blank" rel="noreferrer">View on GitHub <span class="button-arrow" aria-hidden="true">↗</span></a>
         <a class="contact-issue-link" href="https://github.com/sarthakk-10/int-detect/issues" target="_blank" rel="noreferrer">Questions or ideas? Open an issue <span aria-hidden="true">↗</span></a>
       </div>
     </section>
@@ -230,7 +235,7 @@
 
   <footer class="site-footer">
     <a class="brand footer-brand" href="/"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span>netguard<span class="brand-period">.</span></span></a>
-    <p>Built for controlled network analysis and learning.</p>
+    <p>NetGuard — Real-time network intrusion detection and threat monitoring system.</p>
     <a class="footer-link" href="https://github.com/sarthakk-10/int-detect" target="_blank" rel="noreferrer">GitHub <span aria-hidden="true">↗</span></a>
   </footer>
 
