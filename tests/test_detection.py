@@ -36,6 +36,50 @@ class DetectionTests(unittest.TestCase):
         self.assertIsNone(alerts[1])
         self.assertEqual(alerts[2]["label"], "DoS/DDoS")
 
+    def test_flow_table_lifecycle(self):
+        from app.core import FlowTable, Packet, SYN, ACK, RST
+        table = FlowTable()
+        # SYN from client
+        flows = table.add(Packet(1.0, "10.0.0.5", "10.0.0.2", 45000, 80, "TCP", 60, SYN))
+        self.assertEqual(len(flows), 0)
+        self.assertEqual(len(table), 1)
+
+        # SYN+ACK from server
+        flows = table.add(Packet(1.01, "10.0.0.2", "10.0.0.5", 80, 45000, "TCP", 60, SYN | ACK))
+        self.assertEqual(len(flows), 0)
+
+        # RST ends flow
+        flows = table.add(Packet(1.02, "10.0.0.5", "10.0.0.2", 45000, 80, "TCP", 54, RST))
+        self.assertEqual(len(flows), 1)
+        self.assertEqual(flows[0].rst_count, 1)
+        self.assertEqual(flows[0].forward_packets, 2)
+        self.assertEqual(flows[0].backward_packets, 1)
+
+    def test_port_scan_detection(self):
+        engine = DecisionEngine()
+        src = "192.168.1.99"
+        alerts = []
+        for i in range(55):
+            alert = engine.decide(Flow(
+                src=src, dst="10.0.0.2", dport=1000 + i,
+                started=100.0 + i * 0.01, ended=100.0 + i * 0.01 + 0.005,
+                forward_packets=1,
+            ))
+            if alert:
+                alerts.append(alert)
+        self.assertTrue(any(a["label"] == "PortScan" for a in alerts))
+
+    def test_demo_source_background(self):
+        import time
+        from app.sources import DemoSource
+        received = []
+        source = DemoSource(lambda f: received.append(f))
+        source.start()
+        time.sleep(0.3)
+        source.stop()
+        self.assertGreater(len(received), 0)
+
 
 if __name__ == "__main__":
     unittest.main()
+

@@ -24,7 +24,7 @@ from pydantic import BaseModel, Field
 from app.config import AGENT_TOKEN, CAPTURE_MODE, CORS_ORIGINS, DB_PATH, MODEL_PATH, ROOT, STATIC_DIR
 from app.core import DecisionEngine, Flow, env_whitelist, private_target
 from app.database import connect_database
-from app.sources import CaptureSource, flows_from_pcap
+from app.sources import CaptureSource, DemoSource, flows_from_pcap
 from backend.blast_radius.router import router as blast_router
 from backend.blast_radius.service import BlastService
 from backend.blast_radius.topology import ensure_blast_schema, seed_demo_topology
@@ -140,7 +140,10 @@ async def lifespan(application: FastAPI):
         task = asyncio.create_task(
             _keep_alive_task(keep_alive_url, interval_seconds=300)
         )
+    if state["source"] == "demo":
+        demo_source.start()
     yield
+    demo_source.stop()
     if task:
         task.cancel()
         try:
@@ -164,6 +167,7 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 app.include_router(blast_router)
 capture = CaptureSource()
+demo_source = DemoSource(lambda flow: on_live_flow(flow), get_blocked=lambda: state["blocked"])
 clients: set[WebSocket] = set()
 client_lock = asyncio.Lock()
 state_lock = threading.RLock()
@@ -359,7 +363,10 @@ async def get_alerts(limit: int = 50) -> list[dict[str, Any]]:
 async def set_source(request: SourceRequest) -> dict[str, Any]:
     if capture.running:
         capture.stop()
-    if request.source == "live":
+    if request.source == "demo":
+        demo_source.start()
+    elif request.source == "live":
+        demo_source.stop()
         if CAPTURE_MODE == "agent":
             if not AGENT_TOKEN:
                 raise HTTPException(503, "Live capture agent is not configured on this backend")
@@ -368,6 +375,8 @@ async def set_source(request: SourceRequest) -> dict[str, Any]:
                 capture.start(request.interface, on_live_flow)
             except RuntimeError as exc:
                 raise HTTPException(503, str(exc)) from exc
+    else:
+        demo_source.stop()
     with state_lock:
         state["source"] = request.source
         state["interface"] = request.interface if request.source == "live" else None
@@ -461,29 +470,34 @@ async def launch_attack(attack: str, request: AttackRequest) -> dict[str, Any]:
     engine.model_activity.pop(src, None)
     await broadcast({"type": "attack_started", "id": run_id, "attack": label, "source": "demo", "target": target})
 
-    # Bounded in-process lab telemetry feeds the same flow builder/detector
-    # path as packets. It creates no outbound traffic and cannot target a host.
-    now = time.time()
-    events: list[Flow] = []
-    if attack == "normal":
-        for index in range(5):
-            events.append(Flow(src=src, dst=target, dport=8080, started=now + index * .03, ended=now + index * .03 + .02,
-                               forward_packets=3, backward_packets=4, forward_bytes=400, backward_bytes=1200, ack_count=6, request_count=2))
-    elif attack == "portscan":
-        for index in range(60):
-            events.append(Flow(src=src, dst=target, dport=1000 + index, started=now + index * .004, ended=now + index * .004 + .002,
-                               forward_packets=1, forward_bytes=60, syn_count=1, rst_count=1))
-    elif attack == "bruteforce":
-        for index in range(4):
-            events.append(Flow(src=src, dst=target, dport=8080, started=now + index * .04, ended=now + index * .04 + .02,
-                               forward_packets=2, backward_packets=2, forward_bytes=180, backward_bytes=240, ack_count=3, login_failures=3))
-    elif attack == "dos":
-        for index in range(4):
-            events.append(Flow(src=src, dst=target, dport=8080, started=now + index * .02, ended=now + index * .02 + .01,
-                               forward_packets=15, backward_packets=2, forward_bytes=9000, backward_bytes=800, request_count=20, ack_count=15))
-    for flow in events:
-        await process_flow(flow)
-        await asyncio.sleep(.003)
+    durations = {"normal": 3.0, "portscan": 3.5, "bruteforce": 4.0, "dos": 3.5}
+    duration = durations.get(attack, 3.0)
+    if state["source"] == "demo":
+        demo_source.set_attack({"type": attack, "src": src, "dst": target, "until": time.time() + duration})
+        await asyncio.sleep(duration)
+        demo_source.set_attack(None)
+    else:
+        now = time.time()
+        events: list[Flow] = []
+        if attack == "normal":
+            for index in range(5):
+                events.append(Flow(src=src, dst=target, dport=8080, started=now + index * .03, ended=now + index * .03 + .02,
+                                   forward_packets=3, backward_packets=4, forward_bytes=400, backward_bytes=1200, ack_count=6, request_count=2))
+        elif attack == "portscan":
+            for index in range(60):
+                events.append(Flow(src=src, dst=target, dport=1000 + index, started=now + index * .004, ended=now + index * .004 + .002,
+                                   forward_packets=1, forward_bytes=60, syn_count=1, rst_count=1))
+        elif attack == "bruteforce":
+            for index in range(4):
+                events.append(Flow(src=src, dst=target, dport=8080, started=now + index * .04, ended=now + index * .04 + .02,
+                                   forward_packets=2, backward_packets=2, forward_bytes=180, backward_bytes=240, ack_count=3, login_failures=3))
+        elif attack == "dos":
+            for index in range(4):
+                events.append(Flow(src=src, dst=target, dport=8080, started=now + index * .02, ended=now + index * .02 + .01,
+                                   forward_packets=15, backward_packets=2, forward_bytes=9000, backward_bytes=800, request_count=20, ack_count=15))
+        for flow in events:
+            await process_flow(flow)
+            await asyncio.sleep(.003)
     with db() as conn:
         conn.execute("UPDATE attacks SET status='complete' WHERE id=?", (run_id,))
         detected = bool(conn.execute("SELECT detected FROM attacks WHERE id=?", (run_id,)).fetchone()["detected"])
@@ -491,7 +505,7 @@ async def launch_attack(attack: str, request: AttackRequest) -> dict[str, Any]:
         state["active_attack_id"] = None
         state["active_attack_label"] = None
     await broadcast({"type": "attack_complete", "id": run_id, "attack": label, "detected": detected})
-    return {"id": run_id, "attack": label, "status": "complete", "detected": detected, "source": "demo", "target": target, "flows_generated": len(events)}
+    return {"id": run_id, "attack": label, "status": "complete", "detected": detected, "source": "demo", "target": target}
 
 
 @app.post("/api/block/{ip}")

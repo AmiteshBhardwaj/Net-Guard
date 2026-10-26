@@ -1,4 +1,4 @@
-"""Flow features and explainable threat decisions."""
+"""Flow features, flow table tracking, and explainable threat decisions."""
 
 from __future__ import annotations
 
@@ -6,9 +6,11 @@ import ipaddress
 import os
 import time
 import uuid
-from collections import defaultdict, deque
+from collections import Counter, defaultdict, deque
 from dataclasses import dataclass, field
 from typing import Any
+
+FIN, SYN, RST, ACK = 0x01, 0x02, 0x04, 0x10
 
 FEATURES = [
     "destination_port", "duration_seconds", "forward_packets", "backward_packets",
@@ -17,6 +19,18 @@ FEATURES = [
 ]
 LABELS = ["Normal", "PortScan", "DoS/DDoS", "BruteForce"]
 SEVERITY = {"Normal": "LOW", "PortScan": "HIGH", "DoS/DDoS": "CRITICAL", "BruteForce": "HIGH"}
+
+
+@dataclass
+class Packet:
+    ts: float
+    src: str
+    dst: str
+    sport: int
+    dport: int
+    proto: str = "TCP"  # "TCP" | "UDP" | "ICMP"
+    length: int = 60
+    flags: int = 0
 
 
 @dataclass
@@ -39,6 +53,20 @@ class Flow:
     request_count: int = 0
     flow_id: str = field(default_factory=lambda: uuid.uuid4().hex)
 
+    def update(self, p: Packet) -> None:
+        if p.src == self.src and (self.sport is None or p.sport == self.sport):
+            self.forward_packets += 1
+            self.forward_bytes += p.length
+        else:
+            self.backward_packets += 1
+            self.backward_bytes += p.length
+        if p.ts > self.ended:
+            self.ended = p.ts
+        if p.proto == "TCP":
+            self.syn_count += int(bool(p.flags & SYN))
+            self.ack_count += int(bool(p.flags & ACK))
+            self.rst_count += int(bool(p.flags & RST))
+
     def features(self) -> list[float]:
         duration = max(0.001, self.ended - self.started)
         packets = self.forward_packets + self.backward_packets
@@ -56,7 +84,59 @@ class Flow:
             "dport": int(self.dport), "protocol": self.protocol,
             "features": dict(zip(FEATURES, self.features())),
             "login_failures": self.login_failures, "request_count": self.request_count,
+            "pkts": self.forward_packets + self.backward_packets, "syn": self.syn_count,
         }
+
+
+class FlowTable:
+    """Groups packets into bidirectional flows, handles TCP lifecycle, and expires idle flows."""
+
+    def __init__(self, idle: float = 1.0, active_max: float = 5.0, linger: float = 1.0):
+        self.idle = idle
+        self.active_max = active_max
+        self.linger = linger
+        self.flows: dict[tuple, Flow] = {}
+        self.closed: dict[tuple, float] = {}
+
+    def __len__(self) -> int:
+        return len(self.flows)
+
+    @staticmethod
+    def _key(p: Packet) -> tuple:
+        a, b = (p.src, p.sport), (p.dst, p.dport)
+        return (p.proto, a, b) if a <= b else (p.proto, b, a)
+
+    def add(self, p: Packet) -> list[Flow]:
+        k = self._key(p)
+        if k in self.closed:
+            if p.ts < self.closed[k]:
+                return []
+            del self.closed[k]
+        f = self.flows.get(k)
+        if f is None:
+            # For TCP, require SYN to open a clean new flow
+            if p.proto == "TCP" and not (p.flags & SYN and not p.flags & ACK):
+                return []
+            f = Flow(src=p.src, dst=p.dst, sport=p.sport, dport=p.dport, protocol=p.proto,
+                     started=p.ts, ended=p.ts)
+            self.flows[k] = f
+        f.update(p)
+        if f.rst_count or (p.flags & FIN):
+            del self.flows[k]
+            self.closed[k] = p.ts + self.linger
+            return [f]
+        return []
+
+    def expire(self, now: float) -> list[Flow]:
+        out = []
+        for k, f in list(self.flows.items()):
+            if now - f.ended >= self.idle or now - f.started >= self.active_max:
+                out.append(f)
+                del self.flows[k]
+        for k, t in list(self.closed.items()):
+            if t < now:
+                del self.closed[k]
+        return out
 
 
 class DecisionEngine:
@@ -76,26 +156,40 @@ class DecisionEngine:
             return None
         history = self.source_activity[flow.src]
         history.append((now, flow.dport, flow.login_failures, flow.request_count, flow.forward_packets))
-        while history and now - history[0][0] > 5:
+        while history and now - history[0][0] > 5.0:
             history.popleft()
 
-        ports = {item[1] for item in history}
+        ports = Counter(item[1] for item in history)
+        distinct_ports = len(ports)
         login_count = sum(item[2] for item in history)
         requests = sum(item[3] for item in history)
         forward_packets = sum(item[4] for item in history)
+        top_port, top_n = ports.most_common(1)[0]
+        span = max(now - history[0][0], 0.001)
+        eff_span = max(span, 1.0)
+
         label, probability, reasons = "Normal", 0.0, []
-        if len(ports) >= 50 and len(history) >= 3:
+
+        # 1. Port scan rule
+        if distinct_ports >= 50 or (distinct_ports >= 20 and len(history) >= 20):
+            rate = distinct_ports / eff_span
             label, probability = "PortScan", 0.99
-            reasons.append(f"{len(ports)} destination ports touched in 5 seconds")
-        elif login_count >= 8 and sum(item[2] > 0 for item in history) >= 3:
-            label, probability = "BruteForce", 0.98
-            reasons.append(f"{login_count} failed login attempts in 5 seconds")
-        elif requests >= 60 and sum(item[3] > 0 for item in history) >= 3:
-            label, probability = "DoS/DDoS", 0.96
-            reasons.append(f"{requests} requests sent in 5 seconds")
-        elif forward_packets >= 60 and len(history) >= 3:
-            label, probability = "DoS/DDoS", 0.96
-            reasons.append(f"{forward_packets} forward packets sent in 5 seconds")
+            reasons.append(f"{distinct_ports} different ports probed in {span:.1f}s")
+
+        # 2. DoS / flood rule
+        elif top_n >= 50 or requests >= 60 or forward_packets >= 60:
+            rate = max(top_n, requests, forward_packets) / eff_span
+            label, probability = "DoS/DDoS", 0.98
+            count = max(top_n, requests, forward_packets)
+            reasons.append(f"{count} connection requests to port {top_port} in {span:.1f}s ({rate:.0f}/sec)")
+
+        # 3. Brute force rule
+        elif (login_count >= 8 and sum(item[2] > 0 for item in history) >= 3) or (top_n >= 20 and span >= 1.0 and top_n / eff_span <= 30):
+            count = max(login_count, top_n)
+            label, probability = "BruteForce", 0.95
+            reasons.append(f"{count} repeated connection attempts on port {top_port} in {span:.1f}s")
+
+        # 4. Optional ML model inference
         elif self.model is not None:
             try:
                 row = [flow.features()]
@@ -111,22 +205,24 @@ class DecisionEngine:
                     repeated = sum(name == candidate for _, name in activity)
                     if candidate != "Normal" and repeated >= 3:
                         label, probability = candidate, confidence
-                        reasons.append(f"Model confidence {confidence:.0%} across 3+ flows in 5 seconds")
+                        reasons.append(f"Model confidence {confidence:.0%} across {repeated} flows")
             except Exception:
-                # A stale/incompatible model must not take down live monitoring.
                 pass
 
         if label == "Normal" or probability < self.threshold:
             return None
+
+        # Episode cooldowns (10s)
         key = (flow.src, label)
-        if key in self.cooldowns and now - self.cooldowns[key] < 10:
+        if key in self.cooldowns and now - self.cooldowns[key] < 10.0:
             return None
         self.cooldowns[key] = now
+
         return {
             "id": uuid.uuid4().hex, "ts": now, "src": flow.src, "dst": flow.dst,
             "dport": int(flow.dport), "label": label, "prob": round(probability, 3),
-            "severity": SEVERITY[label], "reasons": reasons, "blocked": False,
-            "protocol": flow.protocol,
+            "severity": SEVERITY.get(label, "HIGH"), "reasons": reasons,
+            "blocked": False, "protocol": flow.protocol,
         }
 
 
@@ -144,3 +240,4 @@ def private_target(value: str) -> str:
 
 def env_whitelist() -> set[str]:
     return {part.strip() for part in os.getenv("NETGUARD_WHITELIST", "").split(",") if part.strip()}
+

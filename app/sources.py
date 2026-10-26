@@ -5,9 +5,10 @@ from __future__ import annotations
 import threading
 import time
 from collections import defaultdict
+import random
 from typing import Callable
 
-from app.core import Flow
+from app.core import Flow, FlowTable, Packet, FIN, SYN, RST, ACK
 
 
 def flows_from_pcap(payload: bytes) -> list[Flow]:
@@ -166,3 +167,119 @@ class CaptureSource:
         self._sweeper = None
         self._flush_remaining = None
         self.running = False
+
+
+class DemoSource:
+    """Continuously generates simulated office network telemetry in a background thread."""
+
+    def __init__(self, callback: Callable[[Flow], None], get_blocked: Callable[[], set[str]] | None = None) -> None:
+        self.callback = callback
+        self.get_blocked = get_blocked
+        self._thread: threading.Thread | None = None
+        self._stop_event = threading.Event()
+        self.running = False
+        self.attack: dict | None = None
+        self.acc = {"normal": 0.0, "dns": 0.0, "atk": 0.0}
+        self.scan_port = 1
+        self.clients = [f"10.0.0.{i}" for i in range(10, 31)]
+        self.table = FlowTable()
+
+    def set_attack(self, attack: dict | None) -> None:
+        self.attack = attack
+
+    def start(self) -> None:
+        if self.running:
+            return
+        self._stop_event.clear()
+        self.running = True
+        self._thread = threading.Thread(target=self._run, name="netguard-demo-source", daemon=True)
+        self._thread.start()
+
+    def stop(self) -> None:
+        if not self.running:
+            return
+        self._stop_event.set()
+        if self._thread:
+            self._thread.join(timeout=1.0)
+        self.running = False
+        self._thread = None
+
+    def _count(self, name: str, rate: float, dt: float) -> int:
+        self.acc[name] += rate * dt
+        n = int(self.acc[name])
+        self.acc[name] -= n
+        return n
+
+    def _emit_packet(self, p: Packet, blocked: set[str]) -> None:
+        if p.src in blocked:
+            return
+        for f in self.table.add(p):
+            self.callback(f)
+
+    def _http(self, ts: float, src: str, dport: int, req: int, resp_pkts: int, resp_size: int, blocked: set[str]) -> None:
+        sport = random.randint(40000, 60000)
+        dst = "10.0.0.2"
+
+        def emit(a, b, sp, dp, length, flags):
+            nonlocal ts
+            ts += random.uniform(0.001, 0.008)
+            self._emit_packet(Packet(ts, a, b, sp, dp, "TCP", length, flags), blocked)
+
+        emit(src, dst, sport, dport, 60, SYN)
+        emit(dst, src, dport, sport, 60, SYN | ACK)
+        emit(src, dst, sport, dport, 54, ACK)
+        emit(src, dst, sport, dport, req, ACK)
+        for _ in range(resp_pkts):
+            emit(dst, src, dport, sport, resp_size, ACK)
+        emit(src, dst, sport, dport, 54, FIN | ACK)
+        emit(dst, src, dport, sport, 54, FIN | ACK)
+
+    def _normal(self, now: float, dt: float, blocked: set[str]) -> None:
+        for _ in range(self._count("normal", 6, dt)):
+            self._http(now, random.choice(self.clients), random.choice([8080, 8080, 443]),
+                       random.randint(300, 650), random.randint(2, 6), random.randint(600, 1450), blocked)
+        for _ in range(self._count("dns", 4, dt)):
+            src = random.choice(self.clients)
+            sp = random.randint(40000, 60000)
+            self._emit_packet(Packet(now, src, "10.0.0.1", sp, 53, "UDP", 74), blocked)
+            self._emit_packet(Packet(now + 0.01, "10.0.0.1", src, 53, sp, "UDP", 120), blocked)
+
+    def _attack(self, atk: dict, now: float, dt: float, blocked: set[str]) -> None:
+        kind = atk.get("type")
+        src = atk.get("src", "10.0.0.66")
+        dst = atk.get("dst", "10.0.0.2")
+        if kind == "portscan":
+            for _ in range(self._count("atk", 100, dt)):
+                p = self.scan_port
+                self.scan_port = self.scan_port % 1000 + 1
+                sp = random.randint(40000, 60000)
+                self._emit_packet(Packet(now, src, dst, sp, p, "TCP", 60, SYN), blocked)
+                self._emit_packet(Packet(now + 0.002, dst, src, p, sp, "TCP", 54, RST | ACK), blocked)
+        elif kind == "bruteforce":
+            for _ in range(self._count("atk", 10, dt)):
+                self._http(now, src, 8080, 220, 1, 140, blocked)
+        elif kind == "dos":
+            for _ in range(self._count("atk", 160, dt)):
+                sp = random.randint(40000, 60000)
+                self._emit_packet(Packet(now, src, dst, sp, 8080, "TCP", 60, SYN), blocked)
+                self._emit_packet(Packet(now + 0.001, dst, src, 8080, sp, "TCP", 60, SYN | ACK), blocked)
+                self._emit_packet(Packet(now + 0.002, src, dst, sp, 8080, "TCP", 54, ACK), blocked)
+                self._emit_packet(Packet(now + 0.003, src, dst, sp, 8080, "TCP", 800, ACK), blocked)
+                self._emit_packet(Packet(now + 0.005, dst, src, 8080, sp, "TCP", 54, RST | ACK), blocked)
+
+    def _run(self) -> None:
+        last = time.time()
+        while not self._stop_event.is_set():
+            now = time.time()
+            dt, last = now - last, now
+            blocked = self.get_blocked() if self.get_blocked else set()
+            self._normal(now, dt, blocked)
+            if self.attack and self.attack.get("until", 0) > now:
+                self._attack(self.attack, now, dt, blocked)
+            elif self.attack and self.attack.get("until", 0) <= now:
+                self.attack = None
+
+            for f in self.table.expire(now):
+                self.callback(f)
+            time.sleep(0.05)
+
