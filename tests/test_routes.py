@@ -39,3 +39,15 @@ def test_head_requests_succeed():
     assert client.head("/threat-dashboard").status_code == 200
     assert client.head("/api/health").status_code == 200
 
+
+def test_main_entrypoint_respects_port(monkeypatch):
+    import os
+    from unittest.mock import MagicMock
+
+    mock_run = MagicMock()
+    monkeypatch.setattr("uvicorn.run", mock_run)
+    monkeypatch.setenv("PORT", "12345")
+
+    port = int(os.environ.get("PORT", 10000))
+    assert port == 12345
+

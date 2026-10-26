@@ -32,5 +32,5 @@ RUN mkdir -p /app/data /app/models
 # Expose default port
 EXPOSE 10000
 
-# Start uvicorn with exec so it runs as PID 1 and binds 0.0.0.0:$PORT
-CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-10000}"]
+# Start uvicorn with runtime dynamic $PORT expansion (Render standard)
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-10000}
