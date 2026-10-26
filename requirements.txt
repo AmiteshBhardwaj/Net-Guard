@@ -1,4 +1,5 @@
 fastapi>=0.110,<1
+gunicorn>=22,<24
 uvicorn[standard]>=0.27,<1
 scapy>=2.5,<3
 scikit-learn>=1.4,<2
