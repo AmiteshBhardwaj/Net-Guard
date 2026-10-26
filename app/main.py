@@ -322,18 +322,23 @@ class AgentFlowBatch(BaseModel):
 
 
 @app.get("/")
+@app.head("/")
 @app.get("/landing")
+@app.head("/landing")
 async def landing_page(request: Request) -> FileResponse:
     return FileResponse(ROOT / "static" / "landing.html")
 
 
 @app.get("/dashboard")
+@app.head("/dashboard")
 @app.get("/threat-dashboard")
+@app.head("/threat-dashboard")
 async def dashboard_page(request: Request) -> FileResponse:
     return FileResponse(ROOT / "static" / "index.html")
 
 
 @app.get("/api/health")
+@app.head("/api/health")
 async def health(deep: bool = False) -> dict[str, str]:
     if not deep:
         return {"status": "ok", "service": "NetGuard"}

@@ -4,7 +4,7 @@ FROM python:3.11-slim
 # Prevent Python from writing .pyc files and enable unbuffered logging
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PORT=8000
+    PORT=10000
 
 # Install system dependencies (libpcap for scapy packet processing, curl for healthcheck)
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -30,11 +30,11 @@ COPY supabase/ ./supabase/
 RUN mkdir -p /app/data /app/models
 
 # Expose default port
-EXPOSE 8000
+EXPOSE 10000
 
 # Health check verifying the FastAPI health endpoint
 HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:${PORT:-8000}/api/health || exit 1
+    CMD curl -f http://localhost:${PORT:-10000}/api/health || exit 1
 
 # Start uvicorn with runtime dynamic $PORT expansion (required by Render)
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-10000}"]

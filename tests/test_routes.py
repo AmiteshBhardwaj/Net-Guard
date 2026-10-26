@@ -30,3 +30,12 @@ def test_dashboard_route_serves_dashboard_without_embedded_landing():
     response_threat = client.get("/threat-dashboard")
     assert response_threat.status_code == 200
     assert 'data-dashboard="landing"' not in response_threat.text
+
+
+def test_head_requests_succeed():
+    assert client.head("/").status_code == 200
+    assert client.head("/landing").status_code == 200
+    assert client.head("/dashboard").status_code == 200
+    assert client.head("/threat-dashboard").status_code == 200
+    assert client.head("/api/health").status_code == 200
+
