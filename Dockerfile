@@ -32,9 +32,5 @@ RUN mkdir -p /app/data /app/models
 # Expose default port
 EXPOSE 10000
 
-# Health check verifying the FastAPI health endpoint
-HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:${PORT:-10000}/api/health || exit 1
-
-# Start uvicorn with runtime dynamic $PORT expansion (required by Render)
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-10000}"]
+# Start uvicorn with exec so it runs as PID 1 and binds 0.0.0.0:$PORT
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-10000}"]
