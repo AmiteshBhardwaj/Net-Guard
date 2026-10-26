@@ -9,6 +9,9 @@ data/*.db
 data/*.sqlite3
 data/*.pcap
 data/*.csv
+data/**/*.csv
+data/cicids/
+data/models/
 models/*.joblib
 models/*.json
 caveman/

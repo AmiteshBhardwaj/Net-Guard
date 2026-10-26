@@ -170,27 +170,9 @@ class DecisionEngine:
 
         label, probability, reasons = "Normal", 0.0, []
 
-        # 1. Port scan rule
-        if distinct_ports >= 50 or (distinct_ports >= 20 and len(history) >= 20):
-            rate = distinct_ports / eff_span
-            label, probability = "PortScan", 0.99
-            reasons.append(f"{distinct_ports} different ports probed in {span:.1f}s")
-
-        # 2. DoS / flood rule
-        elif top_n >= 50 or requests >= 60 or forward_packets >= 60:
-            rate = max(top_n, requests, forward_packets) / eff_span
-            label, probability = "DoS/DDoS", 0.98
-            count = max(top_n, requests, forward_packets)
-            reasons.append(f"{count} connection requests to port {top_port} in {span:.1f}s ({rate:.0f}/sec)")
-
-        # 3. Brute force rule
-        elif (login_count >= 8 and sum(item[2] > 0 for item in history) >= 3) or (top_n >= 20 and span >= 1.0 and top_n / eff_span <= 30):
-            count = max(login_count, top_n)
-            label, probability = "BruteForce", 0.95
-            reasons.append(f"{count} repeated connection attempts on port {top_port} in {span:.1f}s")
-
-        # 4. Optional ML model inference
-        elif self.model is not None:
+        # 0. ML model scoring
+        ml_candidate, ml_confidence = None, 0.0
+        if self.model is not None:
             try:
                 row = [flow.features()]
                 classes = list(self.model.classes_)
@@ -203,11 +185,40 @@ class DecisionEngine:
                     while activity and now - activity[0][0] > 5:
                         activity.popleft()
                     repeated = sum(name == candidate for _, name in activity)
-                    if candidate != "Normal" and repeated >= 3:
-                        label, probability = candidate, confidence
-                        reasons.append(f"Model confidence {confidence:.0%} across {repeated} flows")
+                    if candidate != "Normal" and repeated >= 2:
+                        ml_candidate, ml_confidence = candidate, confidence
             except Exception:
                 pass
+
+        # 1. Port scan rule
+        if distinct_ports >= 50 or (distinct_ports >= 20 and len(history) >= 20):
+            rate = distinct_ports / eff_span
+            label, probability = "PortScan", max(0.99, ml_confidence)
+            reasons.append(f"{distinct_ports} different ports probed in {span:.1f}s")
+            if ml_candidate == "PortScan":
+                reasons.append(f"Random Forest confidence {ml_confidence:.0%}")
+
+        # 2. DoS / flood rule
+        elif top_n >= 50 or requests >= 60 or forward_packets >= 60:
+            rate = max(top_n, requests, forward_packets) / eff_span
+            label, probability = "DoS/DDoS", max(0.98, ml_confidence)
+            count = max(top_n, requests, forward_packets)
+            reasons.append(f"{count} connection requests to port {top_port} in {span:.1f}s ({rate:.0f}/sec)")
+            if ml_candidate == "DoS/DDoS":
+                reasons.append(f"Random Forest confidence {ml_confidence:.0%}")
+
+        # 3. Brute force rule
+        elif (login_count >= 8 and sum(item[2] > 0 for item in history) >= 3) or (top_n >= 20 and span >= 1.0 and top_n / eff_span <= 30):
+            count = max(login_count, top_n)
+            label, probability = "BruteForce", max(0.95, ml_confidence)
+            reasons.append(f"{count} repeated connection attempts on port {top_port} in {span:.1f}s")
+            if ml_candidate == "BruteForce":
+                reasons.append(f"Random Forest confidence {ml_confidence:.0%}")
+
+        # 4. Pure ML model detection
+        elif ml_candidate is not None:
+            label, probability = ml_candidate, ml_confidence
+            reasons.append(f"Random Forest confidence {ml_confidence:.0%}")
 
         if label == "Normal" or probability < self.threshold:
             return None

@@ -21,7 +21,7 @@ from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from app.config import AGENT_TOKEN, CAPTURE_MODE, CORS_ORIGINS, DB_PATH, MODEL_PATH, ROOT, STATIC_DIR
+from app.config import AGENT_TOKEN, CAPTURE_MODE, CORS_ORIGINS, DB_PATH, METRICS_PATH, MODEL_PATH, ROOT, STATIC_DIR
 from app.core import DecisionEngine, Flow, env_whitelist, private_target
 from app.database import connect_database
 from app.sources import CaptureSource, DemoSource, flows_from_pcap
@@ -553,8 +553,20 @@ async def set_whitelist(request: WhitelistRequest) -> dict[str, Any]:
 
 @app.get("/api/model")
 async def model_info() -> dict[str, Any]:
-    metrics_path = ROOT / "models" / "metrics.json"
-    metrics = json.loads(metrics_path.read_text()) if metrics_path.exists() else None
+    metrics = json.loads(METRICS_PATH.read_text()) if METRICS_PATH.exists() else None
+    return {"status": state["model_status"], "metrics": metrics}
+
+
+@app.post("/api/model/reload")
+async def reload_model() -> dict[str, Any]:
+    new_model = load_model()
+    if new_model is None:
+        raise HTTPException(status_code=404, detail="No trained model found")
+    engine.model = new_model
+    with state_lock:
+        state["model_status"] = "trained model loaded"
+    metrics = json.loads(METRICS_PATH.read_text()) if METRICS_PATH.exists() else None
+    await broadcast({"type": "model_status", "status": state["model_status"], "metrics": metrics})
     return {"status": state["model_status"], "metrics": metrics}
 
 

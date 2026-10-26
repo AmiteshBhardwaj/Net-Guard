@@ -1,6 +1,6 @@
 # NetGuard
 
-NetGuard is a local network threat-monitoring system. It combines packet-derived flow features, explainable detection rules, an optional Random Forest, and a live browser dashboard.
+NetGuard is a real-time network threat detection and monitoring system. It combines packet-derived flow features, explainable heuristic rules, a trained 220-tree Random Forest classifier (**99.46% accuracy, 97.37% macro F1**), and an interactive live browser dashboard.
 
 ## Run locally (Docker)
 
@@ -17,18 +17,19 @@ The landing page uses Lenis and React Bits' `AnimatedContent` for its section re
 ## Project layout
 
 ```text
-app/              Application entrypoints and runtime configuration
-  config.py       Shared paths and environment settings
-  core.py         Threat detection engine and flow logic
+app/              Application entrypoints, threat detection engine, and runtime configuration
+  config.py       Shared paths, environment settings, and model path configuration
+  core.py         FlowTable, 12-feature extractor, and DecisionEngine inference logic
   database.py     SQLite/PostgreSQL connection compatibility
-  main.py         FastAPI app and HTTP/WebSocket routes
-  sources.py      Packet capture and PCAP ingestion helpers
+  main.py         FastAPI app, WebSocket stream, and API routes
+  sources.py      Packet capture, PCAP ingestion, and telemetry generation
 backend/          Backend services and domain logic
-  blast_radius/   Blast-radius topology and incident modeling
+  blast_radius/   Blast-radius topology, graph traversal, and incident modeling
+docs/             Deep-dive model architecture and benchmark documentation
+models/           Trained model artifacts (netguard.joblib) and metrics.json
+scripts/          Dataset preparation, capture partitioning, and model training
 supabase/         PostgreSQL schema migration for Supabase
-static/           Browser assets served by FastAPI
-scripts/          Model-training utilities
-settings:         Environment variables via NETGUARD_DATA_DIR, NETGUARD_WHITELIST
+static/           Browser assets, charts, and live dashboard UI
 ```
 
 This keeps configuration in one place and avoids importing database configuration from the app entry module.
@@ -95,27 +96,89 @@ Open **Blast Radius** and choose **Workstation compromise**, **Web server compro
 
 If Scapy or the capture driver is unavailable, the dashboard and lab simulation still work. Uploaded PCAPs are limited to 20 MB and replayed in memory.
 
-## Optional Random Forest
+## Machine Learning Intrusion Detection Model
 
-The app starts with explainable rules and says so in the model panel. Live capture and PCAP replay detect port scans and sustained forward-packet bursts; failed-login detection needs application-level telemetry. Train and load a Random Forest using multiple CICIDS2017 per-capture CSV files:
+NetGuard features a production-grade **220-tree Random Forest classifier** trained on bidirectional flow features from the CICIDS2017 dataset. It classifies network traffic in real time into four operational categories: `Normal`, `PortScan`, `DoS/DDoS`, and `BruteForce`.
 
-```bash
-docker compose exec netguard python scripts/train_model.py --data data/cicids
+Detailed design, mathematical equations, and feature derivations are documented in [docs/MODEL_ARCHITECTURE.md](docs/MODEL_ARCHITECTURE.md).
+
+### Benchmark Evaluation Results
+
+Evaluated across **235,264 held-out test flows** using complete capture-session holdout:
+
+| Metric | Score | Detail |
+| :--- | :---: | :--- |
+| **Accuracy** | **99.46%** | Overall correct flow classification rate |
+| **Macro F1-Score** | **97.37%** | Balanced harmonic mean across all four classes |
+| **Macro Precision** | **96.48%** | Average precision across all classes |
+| **Macro Recall** | **98.35%** | Average detection recall across all classes |
+| **False Alarm Rate** | **0.59%** | Less than 6 false alarms per 1,000 normal flows |
+
+### Per-Class Detailed Performance
+
+| Class | Precision | Recall | F1-Score | Held-Out Test Support |
+| :--- | :---: | :---: | :---: | :---: |
+| **`Normal`** | **99.72%** | **99.41%** | **99.56%** | 146,702 flows |
+| **`PortScan`** | **99.99%** | **99.99%** | **99.99%** | 39,025 flows |
+| **`DoS/DDoS`** | **99.55%** | **99.68%** | **99.62%** | 44,934 flows |
+| **`BruteForce`** | **86.65%** | **94.31%** | **90.32%** | 4,603 flows |
+
+### Confusion Matrix (235,264 Test Samples)
+
+```text
+Actual \ Predicted        Normal       PortScan       DoS/DDoS     BruteForce    Class Recall
+Normal                   145,832              0            201            669          99.41%
+PortScan                       2         39,023              0              0          99.99%
+DoS/DDoS                     145              0         44,789              0          99.68%
+BruteForce                   260              2              0          4,341          94.31%
+Class Precision           99.72%         99.99%         99.55%         86.65%
 ```
 
-Use `--jobs 1` where the environment restricts multiprocessing.
+### Feature Engineering Pipeline
 
-The input CSVs must contain the 12 mapped CICFlowMeter columns and a `Label` column. Validation holds out complete files to prevent individual flow rows leaking across train and test. It requires all four supported classes on both sides; if the supplied capture files cannot provide that split, the script stops instead of reporting misleading scores. The trained model and `models/metrics.json` are loaded by the app on restart. Keep dataset files outside version control.
+NetGuard aggregates packets into bidirectional flows, extracting 12 CICFlowMeter-compatible features:
+1. `destination_port`: Target port number
+2. `duration_seconds`: Flow duration in seconds
+3. `forward_packets`: Forward packet count ($N_{\text{fwd}}$)
+4. `backward_packets`: Backward packet count ($N_{\text{bwd}}$)
+5. `forward_bytes`: Forward octet volume
+6. `backward_bytes`: Backward octet volume
+7. `bytes_per_second`: Total bytes / duration
+8. `packets_per_second`: Total packets / duration
+9. `average_packet_size`: Total octets / total packets
+10. `syn_count`: TCP SYN flag occurrences
+11. `ack_count`: TCP ACK flag occurrences
+12. `rst_count`: TCP RST flag occurrences
+
+### Re-training & Reproducing the Model
+
+To download data, partition into session holdout groups, and train:
+
+```bash
+# 1. Download CICIDS2017 capture CSV files
+python scripts/download_dataset.py
+
+# 2. Partition into chronological session-held-out pairs (Part1 and Part2)
+python scripts/prepare_balanced_captures.py
+
+# 3. Train the 220-tree Random Forest and generate models/netguard.joblib + metrics.json
+python scripts/train_model.py --data data/cicids --jobs -1
+```
+
+The app automatically loads `models/netguard.joblib` on startup. To hot-reload a newly trained model without restarting uvicorn, send `POST /api/model/reload`.
 
 ## API
 
-- `GET /api/stats`, `GET /api/alerts`, `GET /api/model`
-- `POST /api/source` with `{"source":"demo"}` or `{"source":"live","interface":"..."}`
-- `POST /api/replay?filename=capture.pcap&speed=1` with raw PCAP bytes
-- `POST /api/launch/{normal|portscan|bruteforce|dos}` with `{"target":"127.0.0.1"}`
-- `POST /api/block/{ip}` and `DELETE /api/block/{ip}` (simulated application blocklist only)
-- `POST /api/agent/flows` with an authenticated bounded batch (capture-agent mode only)
-- `PUT /api/whitelist` with `{"ips":["192.168.1.1"]}`; or set `NETGUARD_WHITELIST` before startup
-- WebSocket: `/ws`
+- `GET /api/stats` - Telemetry counters, active packet rate, and engine status
+- `GET /api/alerts` - List of detected threats with severity, probability, and explainable reasons
+- `GET /api/model` - Current model status and benchmark metrics from `models/metrics.json`
+- `POST /api/model/reload` - Hot-reload model from `models/netguard.joblib` and broadcast to WebSocket clients
+- `POST /api/source` - Switch traffic source: `{"source":"demo"}` or `{"source":"live","interface":"eth0"}`
+- `POST /api/replay?filename=capture.pcap&speed=1` - Upload and replay raw PCAP byte stream
+- `POST /api/launch/{normal|portscan|bruteforce|dos}` - Trigger bounded simulation attack against `{"target":"127.0.0.1"}`
+- `POST /api/block/{ip}` and `DELETE /api/block/{ip}` - Manage simulated network firewall blocklist
+- `POST /api/agent/flows` - Ingest batch flow telemetry from remote live capture agent
+- `PUT /api/whitelist` - Update IP whitelist: `{"ips":["192.168.1.1"]}`
+- WebSocket: `/ws` - Real-time stream of flow telemetry, threat alerts, and model status updates
 
 SQLite state is stored in `data/netguard.sqlite3` by default. Set `NETGUARD_DATA_DIR` to use another local directory, or set `NETGUARD_DATABASE_URL` to use PostgreSQL.

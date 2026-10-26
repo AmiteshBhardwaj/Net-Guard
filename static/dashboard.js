@@ -177,17 +177,17 @@
     if (sideAlertCount) sideAlertCount.textContent = stats.alerts ?? 0;
     const trained = stats.model_status === "trained model loaded";
     const engineStatus = trained
-      ? "Isolation Forest and rules are active" : "Rules are active. Model is not trained.";
+      ? "Random Forest and rules are active" : "Rules are active. Model is not trained.";
     $("#model-status").textContent = engineStatus;
     $("#rail-engine-status").textContent = trained ? "MODEL + RULES" : "RULES ACTIVE";
     $("#model-dot").style.background = trained ? "var(--green)" : "var(--amber)";
-    if ($("#engine-kpi-name")) $("#engine-kpi-name").textContent = trained ? "Isolation Forest" : "Rules";
+    if ($("#engine-kpi-name")) $("#engine-kpi-name").textContent = trained ? "Random Forest" : "Rules";
     if ($("#engine-kpi-confidence")) $("#engine-kpi-confidence").textContent = trained ? "Model loaded" : "Rules active";
     if ($("#engine-kpi-caption")) $("#engine-kpi-caption").textContent = trained ? "Model and explainable rules" : "Model is not available";
     $("#overview-engine-status").textContent = engineStatus;
-    $("#engine-overview-model").textContent = trained ? "Isolation Forest + rules" : "Explainable rules";
+    $("#engine-overview-model").textContent = trained ? "Random Forest + rules" : "Explainable rules";
     $("#model-health").textContent = trained ? "Trained model loaded" : "Rules only · model not trained";
-    $("#activity-model").textContent = trained ? "Isolation Forest + rules" : "Rules active";
+    $("#activity-model").textContent = trained ? "Random Forest + rules" : "Rules active";
     const sourceLabel = { live: "Live capture", pcap: "Capture file", demo: "Demo traffic" }[stats.source || "demo"];
     $("#overview-source").textContent = sourceLabel;
     $("#overview-telemetry").textContent = stats.source === "live"
