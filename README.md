@@ -81,7 +81,11 @@ The default source is **Lab simulation**. The attack buttons generate bounded, l
 
 ## Dashboard demo mode
 
-Open `/?mock=1` to run the dashboard's scripted UI without the backend. Use the top navigation to switch between Overview, Alerts, Activity, Model, Sources, Safe test, Live capture, and Exposure; each view also has a matching URL hash (for example `/?mock=1#incident-lab`). Use **Create sample detection** or one of the simulated attack buttons to play the normal → detected → responding → contained sequence. In Safe test, **Reset mock lab** clears the scripted counters. Add `&state=normal`, `&state=elevated`, `&state=critical`, or `&state=contained` to preview a specific theme. Press **P** or use **Presenter** to toggle the large-screen layout. Mock telemetry is clearly marked and never makes API or WebSocket requests.
+Open `/?mock=1` to run the dashboard's scripted UI without live telemetry. Use the top navigation to switch between Overview, Alerts, Activity, Model, Sources, Safe test, Live capture, Blast Radius, and Exposure; each view also has a matching URL hash (for example `/?mock=1#incident-lab`). Use **Create sample detection** or one of the simulated attack buttons to play the normal → detected → responding → contained sequence. In Safe test, **Reset mock lab** clears the scripted counters. Add `&state=normal`, `&state=elevated`, `&state=critical`, or `&state=contained` to preview a specific theme. Press **P** or use **Presenter** to toggle the large-screen layout. Mock telemetry never sends packets or uses the WebSocket. Blast Radius loads the fictional local topology from the read-only `/api/blast` endpoints, so run the FastAPI app to use that page.
+
+### Blast Radius demo
+
+Open **Blast Radius** and choose **Workstation compromise**, **Web server compromise**, or **Isolated endpoint**. The endpoint selector also lets you choose any modeled asset. Nodes show shortest-hop potential reachability over active, direction-aware topology links; click a node for its path, status, connections, and defensive recommendations. Alerts select the matching modeled asset by ID or destination address; an unmapped target uses the fictional Employee Workstation (`workstation-01`) as the documented fallback. These scenarios use local sample data only: graph reachability is not proof of exploitability or compromise, and the feature does not scan or send packets to assets.
 
 ## Traffic sources
 

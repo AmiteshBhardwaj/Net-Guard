@@ -9,7 +9,8 @@ const items = [
   { label: 'Sources', href: '#demo-ingress', id: 'demo-ingress' },
   { label: 'Safe test', href: '#attack-lab', id: 'attack-lab' },
   { label: 'Capture', href: '#live-sniffer', id: 'live-sniffer' },
-  { label: 'Exposure', href: '#blast-radius', id: 'blast-radius' },
+  { label: 'Blast Radius', href: '#blast-radius', id: 'blast-radius' },
+  { label: 'Exposure', href: '#exposure', id: 'exposure' },
 ];
 
 const getCurrentRoute = () => window.location.hash.slice(1) || 'overview';

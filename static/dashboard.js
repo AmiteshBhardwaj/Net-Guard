@@ -31,7 +31,31 @@
     chartWindow: 60,
     alertFilter: "all",
     presenterReturnDashboard: "",
+    blastOrigin: "workstation-01",
+    blastTopology: null,
+    blastRadius: null,
+    blastSelectedAsset: "workstation-01",
+    blastRequest: 0,
+    blastZoom: 1,
+    blastSimulated: true,
+    blastAlerted: false,
     mock: mockMode
+  };
+  const DEFAULT_BLAST_ORIGIN = "workstation-01";
+  const BLAST_SCENARIOS = {
+    "workstation-01": "Workstation compromise",
+    "dmz-server": "Web server compromise",
+    "isolated-workstation": "Isolated endpoint"
+  };
+  const ASSET_PRESENTATION = {
+    "dmz-server": { name: "Web Server", type: "Web server" },
+    "core-cluster": { name: "Application Server", type: "Application server" },
+    "db-primary": { name: "Database Server", type: "Database server" },
+    "auth-server": { name: "Authentication Server", type: "Authentication server" },
+    "backup-store": { name: "File Server", type: "File server" },
+    "workstation-01": { name: "Employee Workstation", type: "Employee workstation" },
+    "workstation-02": { name: "Finance Workstation", type: "Employee workstation" },
+    "isolated-workstation": { name: "Isolated Test Workstation", type: "Isolated workstation" }
   };
   const attackInfo = {
     portscan: { label: "PortScan", technique: "T1046", tactic: "Reconnaissance" },
@@ -46,7 +70,8 @@
     "threat-overview": ["Activity", "See how traffic and alerts have changed over time."],
     "isolation-forest": ["Detection model", "View active checks and model performance."],
     "attack-lab": ["Safe test", "Create sample traffic locally to check alert detection."],
-    "blast-radius": ["Asset exposure", "See which monitored systems can reach one another."],
+    "blast-radius": ["Blast Radius", "Explore potential reachability from a selected endpoint."],
+    exposure: ["Exposure", "See which monitored systems can reach one another."],
     "demo-ingress": ["Traffic source", "Choose demo traffic, a saved file, or live capture."],
     "live-sniffer": ["Live capture", "Choose a network interface or replay a capture file."]
   };
@@ -112,7 +137,8 @@
     $("#dashboard-description").textContent = description;
     $("#breadcrumb-page").textContent = title;
     if (updateHash && location.hash !== `#${key}`) history.replaceState(null, "", `#${key}`);
-    if (key === "blast-radius") refreshBlastRadius();
+    if (key === "exposure") refreshBlastRadius();
+    if (key === "blast-radius") refreshDetailedBlastRadius(state.blastOrigin);
     const activeLink = $(`[data-dashboard-link="${key}"]`);
     activeLink?.closest("details")?.removeAttribute("open");
     document.body.classList.remove("nav-open");
@@ -271,6 +297,236 @@
           <div class="node-meta">${escapeHtml(node.why_reachable || "Reachability inferred from topology.")}</div>
         </div>`).join("")
       : '<div class="blast-node-item"><div class="node-meta">No lateral expansion path is currently available.</div></div>';
+  }
+
+  function blastAssetName(asset) {
+    return ASSET_PRESENTATION[asset.id]?.name || asset.name || asset.id;
+  }
+
+  function blastAssetType(asset) {
+    return ASSET_PRESENTATION[asset.id]?.type || asset.role || asset.zone || "Network asset";
+  }
+
+  function setBlastMetric(id, value) {
+    const element = $(`#${id}`);
+    if (element) element.textContent = String(value);
+  }
+
+  function showBlastError(error) {
+    const message = error?.message || "Unknown error";
+    const graph = $("#blast-graph");
+    if (graph) graph.innerHTML = `<p class="blast-empty blast-empty--error">Topology unavailable: ${escapeHtml(message)}. Check the local NetGuard API and retry.</p>`;
+    const details = $("#blast-details-content");
+    if (details) details.innerHTML = '<p>Asset details are unavailable until the topology API responds.</p>';
+    const summary = $("#blast-risk-summary");
+    if (summary) summary.textContent = `Analysis could not be updated: ${message}`;
+    ["blast-metric-endpoint", "blast-metric-reachable", "blast-metric-critical", "blast-metric-hops"].forEach(id => setBlastMetric(id, "—"));
+  }
+
+  function renderBlastEndpointOptions(assets) {
+    const endpoint = $("#blast-endpoint");
+    if (!endpoint) return;
+    endpoint.innerHTML = assets.map(asset =>
+      `<option value="${escapeHtml(asset.id)}">${escapeHtml(blastAssetName(asset))} · ${escapeHtml(asset.ip || "No address")}</option>`
+    ).join("");
+    endpoint.value = state.blastOrigin;
+  }
+
+  function blastNodePositions(assets) {
+    const known = {
+      "border-gateway": [88, 250],
+      "workstation-01": [115, 100],
+      "workstation-02": [300, 95],
+      "auth-server": [315, 250],
+      "dmz-server": [315, 430],
+      "core-cluster": [525, 250],
+      "db-primary": [730, 135],
+      "backup-store": [730, 365],
+      "isolated-workstation": [520, 485]
+    };
+    return new Map(assets.map((asset, index) => [
+      asset.id,
+      known[asset.id] || [90 + (index % 4) * 210, 100 + Math.floor(index / 4) * 150]
+    ]));
+  }
+
+  function blastRecommendation(asset, origin, node) {
+    if (asset.id === origin.id) return "For a simulated alert, isolate the test endpoint in your response plan and validate its identity before taking action.";
+    if (!node) return "Review access permissions and monitor for suspicious connections before changing controls.";
+    if (asset.criticality >= 4) return "Restrict unnecessary network access, review service permissions, and monitor connections to this critical asset.";
+    if (blastAssetType(asset).toLowerCase().includes("workstation")) return "Review endpoint access and monitor suspicious outbound or lateral connections.";
+    return "Restrict unnecessary network access and review the permissions on this service.";
+  }
+
+  function renderBlastAssetDetails(assetId) {
+    const content = $("#blast-details-content");
+    const title = $("#blast-details-title");
+    if (!content || !title || !state.blastTopology) return;
+    const asset = state.blastTopology.assets.find(item => item.id === assetId);
+    if (!asset) {
+      title.textContent = "Asset not available";
+      content.innerHTML = "<p>The selected asset is no longer present in the configured topology.</p>";
+      return;
+    }
+    const radiusNode = state.blastRadius?.nodes?.find(node => node.id === assetId);
+    const origin = state.blastTopology.assets.find(item => item.id === state.blastOrigin);
+    if (!origin) return;
+    const isOrigin = asset.id === state.blastOrigin;
+    const path = isOrigin ? [origin.id] : radiusNode?.path || [];
+    const hops = isOrigin ? 0 : radiusNode?.hop;
+    const direct = state.blastTopology.links
+      .filter(link => link.active !== false && (link.src === assetId || (link.bidirectional !== false && link.dst === assetId)))
+      .map(link => state.blastTopology.assets.find(item => item.id === (link.src === assetId ? link.dst : link.src)))
+      .filter(Boolean);
+    const status = isOrigin && state.blastSimulated ? "Simulated compromise"
+      : isOrigin && state.blastAlerted ? "Alerted"
+      : ["targeted", "alerted"].includes(String(asset.status).toLowerCase()) ? "Alerted"
+        : String(asset.status || "healthy").toLowerCase() === "quarantined" ? "Quarantined" : "Normal";
+    const why = isOrigin
+      ? "This is the selected starting endpoint for the scenario."
+      : radiusNode
+        ? `${hops === 1 ? "Directly reachable" : `Potentially reachable in ${hops} hops`} over the configured path ${path.map(id => blastAssetName(state.blastTopology.assets.find(item => item.id === id) || { id })).join(" → ")}.`
+        : "No active directed path from the selected endpoint was found in the current graph.";
+    const pathText = path.length ? path.map(id => blastAssetName(state.blastTopology.assets.find(item => item.id === id) || { id })).join(" → ") : "No path";
+    title.textContent = blastAssetName(asset);
+    content.innerHTML = `
+      <dl class="blast-detail-list">
+        <div><dt>Type</dt><dd>${escapeHtml(blastAssetType(asset))}</dd></div>
+        <div><dt>Status</dt><dd><span class="blast-status blast-status--${status.toLowerCase().replaceAll(" ", "-")}">${escapeHtml(status)}</span></dd></div>
+        <div><dt>Risk classification</dt><dd>${asset.criticality >= 4 ? "Critical" : asset.criticality >= 3 ? "Elevated" : "Standard"} · ${asset.criticality}/5</dd></div>
+        <div><dt>Address / zone</dt><dd>${escapeHtml(asset.ip || "No address")} · ${escapeHtml(asset.zone || "Unassigned")}</dd></div>
+        <div><dt>Connections</dt><dd>${direct.length ? direct.map(item => escapeHtml(blastAssetName(item))).join(", ") : "None configured"}</dd></div>
+        <div><dt>Path from selected endpoint</dt><dd>${escapeHtml(pathText)}</dd></div>
+        <div><dt>Reachability hops</dt><dd>${Number.isInteger(hops) ? hops : "Unreachable"}</dd></div>
+        <div><dt>Why included</dt><dd>${escapeHtml(why)}</dd></div>
+        <div><dt>Defensive recommendation</dt><dd>${escapeHtml(blastRecommendation(asset, origin, radiusNode))}</dd></div>
+      </dl>`;
+  }
+
+  function renderDetailedBlastRadius(topology, radius) {
+    const assets = topology.assets || [];
+    const links = topology.links || [];
+    const origin = assets.find(asset => asset.id === radius.origin_id);
+    if (!origin) throw new Error("The selected endpoint is missing from the network topology.");
+    const nodeById = new Map((radius.nodes || []).map(node => [node.id, node]));
+    const positions = blastNodePositions(assets);
+    const width = 900;
+    const height = 540;
+    const selected = assets.find(asset => asset.id === state.blastSelectedAsset) || origin;
+    const selectedNode = nodeById.get(selected.id);
+    const path = selected.id === origin.id ? [origin.id] : selectedNode?.path || [];
+    const pathEdges = new Set(path.slice(1).map((id, index) => `${path[index]}>${id}`));
+    const edgeMarkup = links.filter(link => link.active !== false && positions.has(link.src) && positions.has(link.dst)).map(link => {
+      const [x1, y1] = positions.get(link.src);
+      const [x2, y2] = positions.get(link.dst);
+      const onPath = pathEdges.has(`${link.src}>${link.dst}`)
+        || (link.bidirectional !== false && pathEdges.has(`${link.dst}>${link.src}`));
+      const direct = nodeById.get(link.src)?.hop === 1 || nodeById.get(link.dst)?.hop === 1
+        || link.src === origin.id || link.dst === origin.id;
+      const direction = `${link.bidirectional !== false ? ' marker-start="url(#blast-arrow)"' : ""} marker-end="url(#blast-arrow)"`;
+      return `<line class="blast-edge${direct ? " blast-edge--direct" : ""}${onPath ? " blast-edge--path" : ""}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"${direction}><title>${escapeHtml(blastAssetName(assets.find(asset => asset.id === link.src) || { id: link.src }))} to ${escapeHtml(blastAssetName(assets.find(asset => asset.id === link.dst) || { id: link.dst }))} · ${escapeHtml(link.protocol || "network")} ${link.ports?.length ? `ports ${escapeHtml(link.ports.join(", "))}` : ""}</title></line>`;
+    }).join("");
+    const nodeMarkup = assets.map(asset => {
+      const [x, y] = positions.get(asset.id);
+      const radiusNode = nodeById.get(asset.id);
+      const isOrigin = asset.id === origin.id;
+      const reachable = Boolean(radiusNode);
+      const critical = Number(asset.criticality) >= 4;
+      const status = isOrigin && state.blastSimulated ? "Simulated compromise"
+        : isOrigin && state.blastAlerted ? "Alerted"
+        : ["targeted", "alerted"].includes(String(asset.status).toLowerCase()) ? "Alerted"
+          : String(asset.status || "healthy").toLowerCase() === "quarantined" ? "Quarantined" : "Normal";
+      const classes = [
+        "blast-node",
+        isOrigin ? "blast-node--origin" : "",
+        !isOrigin && reachable && radiusNode.hop === 1 ? "blast-node--direct" : "",
+        !isOrigin && reachable && radiusNode.hop > 1 ? "blast-node--indirect" : "",
+        !isOrigin && !reachable ? "blast-node--unreachable" : "",
+        critical ? "blast-node--critical" : "",
+        selected.id === asset.id ? "blast-node--selected" : "",
+        status === "Alerted" || status === "Simulated compromise" ? "blast-node--alerted" : ""
+      ].filter(Boolean).join(" ");
+      const hopLabel = isOrigin ? "Source" : reachable ? `${radiusNode.hop} hop${radiusNode.hop === 1 ? "" : "s"}` : "Unreachable";
+      const type = blastAssetType(asset);
+      return `<g class="${classes}" data-blast-asset="${escapeHtml(asset.id)}" tabindex="0" role="button" aria-label="${escapeHtml(blastAssetName(asset))}, ${escapeHtml(type)}, ${escapeHtml(status)}, ${escapeHtml(hopLabel)}" transform="translate(${x} ${y})">
+        <title>${escapeHtml(blastAssetName(asset))} · ${escapeHtml(type)} · ${escapeHtml(status)} · ${escapeHtml(hopLabel)}${critical ? " · Critical asset" : ""}</title>
+        <circle class="blast-node__halo" r="48"></circle><circle class="blast-node__body" r="39"></circle>
+        ${critical ? '<text class="blast-node__warning" x="29" y="-29">!</text>' : ""}
+        <text class="blast-node__name" y="-8">${escapeHtml(blastAssetName(asset))}</text>
+        <text class="blast-node__type" y="4">${escapeHtml(type)}</text>
+        <text class="blast-node__status" y="16">${escapeHtml(status)}</text>
+        <text class="blast-node__hop" y="27">${escapeHtml(hopLabel)}</text>
+        <text class="blast-node__ip" y="37">${escapeHtml(asset.ip || "")}</text>
+      </g>`;
+    }).join("");
+    const graph = $("#blast-graph");
+    if (graph) graph.innerHTML = `<svg id="blast-graph-svg" class="blast-graph__svg" viewBox="0 0 ${width} ${height}" role="group" aria-label="Fictional network topology showing potential reachability from ${escapeHtml(blastAssetName(origin))}">
+      <defs><marker id="blast-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z"></path></marker></defs>
+      <g class="blast-graph__edges">${edgeMarkup}</g><g class="blast-graph__nodes">${nodeMarkup}</g>
+    </svg>`;
+    renderBlastEndpointOptions(assets);
+    const riskNodes = radius.nodes || [];
+    const criticalCount = riskNodes.filter(node => Number(node.criticality) >= 4).length;
+    setBlastMetric("blast-metric-endpoint", blastAssetName(origin));
+    setBlastMetric("blast-metric-endpoint-status", state.blastSimulated ? "Simulated scenario · local sample only"
+      : state.blastAlerted ? "Linked from a recent alert" : `Current status · ${origin.status || "normal"}`);
+    setBlastMetric("blast-metric-reachable", riskNodes.length);
+    setBlastMetric("blast-metric-critical", criticalCount);
+    setBlastMetric("blast-metric-hops", radius.summary?.max_hop || 0);
+    const riskSummary = $("#blast-risk-summary");
+    if (riskSummary) {
+      riskSummary.textContent = riskNodes.length
+        ? `${riskNodes.length} asset${riskNodes.length === 1 ? "" : "s"} have a configured path from ${blastAssetName(origin)}; ${criticalCount} are rated critical (4–5/5). These are potential paths only, not proof of exploitability or compromise.`
+        : `No assets are reachable from ${blastAssetName(origin)} using the current active directed links. Disconnected assets remain shown but muted.`;
+    }
+    const zoom = $("#blast-graph-svg");
+    if (zoom) zoom.style.transform = `scale(${state.blastZoom})`;
+    renderBlastAssetDetails(state.blastSelectedAsset);
+  }
+
+  async function refreshDetailedBlastRadius(originId = state.blastOrigin, options = {}) {
+    const requestId = ++state.blastRequest;
+    const graph = $("#blast-graph");
+    if (graph) graph.innerHTML = '<p class="blast-empty">Loading fictional network topology…</p>';
+    try {
+      if (!state.blastTopology) state.blastTopology = await api("/api/blast/topology");
+      const assets = state.blastTopology.assets || [];
+      const selectedOrigin = assets.find(asset => asset.id === originId) || assets.find(asset => asset.id === DEFAULT_BLAST_ORIGIN) || assets[0];
+      if (!selectedOrigin) throw new Error("No assets are configured in the network topology.");
+      const radius = await api(`/api/blast/radius/${encodeURIComponent(selectedOrigin.id)}`);
+      if (requestId !== state.blastRequest) return;
+      state.blastOrigin = selectedOrigin.id;
+      state.blastRadius = radius;
+      state.blastSelectedAsset = assets.some(asset => asset.id === state.blastSelectedAsset) ? state.blastSelectedAsset : selectedOrigin.id;
+      renderDetailedBlastRadius(state.blastTopology, radius);
+      if (options.notify) toast(`Blast radius updated · ${blastAssetName(selectedOrigin)} · potential reachability only`);
+    } catch (error) {
+      if (requestId !== state.blastRequest) return;
+      showBlastError(error);
+      if (options.notify) toast(`Blast radius could not be updated · ${error.message}`);
+    }
+  }
+
+  async function updateBlastRadiusFromAlert(alert) {
+    try {
+      if (!state.blastTopology) state.blastTopology = await api("/api/blast/topology");
+      const assets = state.blastTopology.assets || [];
+      const explicitId = alert.asset_id || alert.endpoint_id || alert.asset;
+      const targetAddress = alert.dst || alert.target || alert.target_ip;
+      const matchingAsset = assets.find(asset => asset.ip === targetAddress);
+      const origin = assets.find(asset => asset.id === explicitId) || matchingAsset
+        || assets.find(asset => asset.id === DEFAULT_BLAST_ORIGIN);
+      if (!origin) throw new Error("No demo fallback endpoint is available in the topology.");
+      state.blastSimulated = Boolean(alert.mock || String(alert.id).startsWith("mock-"));
+      state.blastAlerted = !state.blastSimulated;
+      state.blastSelectedAsset = origin.id;
+      const scenario = $("#blast-scenario");
+      if (scenario) scenario.value = BLAST_SCENARIOS[origin.id] ? origin.id : "";
+      await refreshDetailedBlastRadius(origin.id, { notify: true });
+    } catch (error) {
+      showBlastError(error);
+      toast(`Blast radius could not be updated · ${error.message}`);
+    }
   }
 
   async function refreshBlastRadius() {
@@ -749,6 +1005,7 @@
 
   function addAlert(alert, render = true, mock = false) {
     if (!alert || !alert.id || state.alerts.some(item => item.id === alert.id)) return false;
+    alert.mock = Boolean(mock || alert.mock);
     alert.isNew = true;
     state.alerts.unshift(alert);
     state.alerts = state.alerts.slice(0, 60);
@@ -765,6 +1022,7 @@
     }
     appendLog(`${alert.label} detected · ${alert.src} → ${alert.dst}:${alert.dport}`, "alert-line");
     beginResponse(alert, mock);
+    updateBlastRadiusFromAlert(alert);
     setTimeout(() => {
       const item = state.alerts.find(entry => entry.id === alert.id);
       if (item) item.isNew = false;
@@ -802,6 +1060,18 @@
       toast(`${message.ip} added to simulated blocklist`);
       if (state.incident?.src === message.ip) completeContainment(state.incident, false);
       return "render";
+    }
+    if (message.type === "blast.computed" && message.origin) {
+      state.blastSimulated = false;
+      state.blastAlerted = true;
+      state.blastSelectedAsset = message.origin;
+      refreshDetailedBlastRadius(message.origin);
+      return "";
+    }
+    if (message.type === "blast.contained" || message.type === "blast.reset") {
+      state.blastTopology = null;
+      refreshDetailedBlastRadius(state.blastOrigin);
+      return "";
     }
     if (message.type === "flow") {
       return "flow";
@@ -1201,6 +1471,54 @@
       if ($("#capture-toggle").classList.contains("active")) setSource("live");
     });
     $("#pcap-file").addEventListener("change", replayCapture);
+    $("#blast-scenario").addEventListener("change", event => {
+      const origin = event.target.value;
+      if (!origin) return;
+      $("#blast-endpoint").value = origin;
+      state.blastSimulated = true;
+      state.blastAlerted = false;
+      state.blastSelectedAsset = origin;
+      state.blastZoom = 1;
+      refreshDetailedBlastRadius(origin, { notify: true });
+    });
+    $("#blast-endpoint").addEventListener("change", event => {
+      const origin = event.target.value;
+      $("#blast-scenario").value = BLAST_SCENARIOS[origin] ? origin : "";
+      state.blastSimulated = false;
+      state.blastAlerted = false;
+      state.blastSelectedAsset = origin;
+      state.blastZoom = 1;
+      refreshDetailedBlastRadius(origin, { notify: true });
+    });
+    $("#blast-graph").addEventListener("click", event => {
+      const node = event.target.closest("[data-blast-asset]");
+      if (!node) return;
+      state.blastSelectedAsset = node.dataset.blastAsset;
+      renderDetailedBlastRadius(state.blastTopology, state.blastRadius);
+    });
+    $("#blast-graph").addEventListener("keydown", event => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      const node = event.target.closest("[data-blast-asset]");
+      if (!node) return;
+      event.preventDefault();
+      state.blastSelectedAsset = node.dataset.blastAsset;
+      renderDetailedBlastRadius(state.blastTopology, state.blastRadius);
+    });
+    $("#blast-zoom-in").addEventListener("click", () => {
+      state.blastZoom = Math.min(1.5, state.blastZoom + 0.1);
+      const svg = $("#blast-graph-svg");
+      if (svg) svg.style.transform = `scale(${state.blastZoom})`;
+    });
+    $("#blast-zoom-out").addEventListener("click", () => {
+      state.blastZoom = Math.max(0.7, state.blastZoom - 0.1);
+      const svg = $("#blast-graph-svg");
+      if (svg) svg.style.transform = `scale(${state.blastZoom})`;
+    });
+    $("#blast-zoom-reset").addEventListener("click", () => {
+      state.blastZoom = 1;
+      state.blastSelectedAsset = state.blastOrigin;
+      renderDetailedBlastRadius(state.blastTopology, state.blastRadius);
+    });
     $$("[data-dashboard-link]").forEach(link => link.addEventListener("click", event => {
       event.preventDefault();
       setDashboard(link.dataset.dashboardLink);

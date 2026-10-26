@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-import heapq
-from collections import defaultdict
+from collections import defaultdict, deque
 from typing import Any
 
 from backend.blast_radius.models import BlastEdge, BlastNode, BlastResult, BlastSummary
@@ -57,29 +56,31 @@ def compute_blast_radius(origin_id: str, assets: list[dict[str, Any]], links: li
             continue
         filtered_links.append(link)
 
-    adjacency: dict[str, list[tuple[float, str, dict[str, Any]]]] = defaultdict(list)
+    adjacency: dict[str, list[tuple[str, dict[str, Any]]]] = defaultdict(list)
     for link in filtered_links:
-        src_asset = asset_map[link["src"]]
-        dst_asset = asset_map[link["dst"]]
-        cost = 1.0 / (float(link.get("weight", 1.0)) * TRUST_FACTOR.get(link.get("trust", "medium"), 0.7))
-        adjacency[link["src"]].append((cost, link["dst"], link))
+        adjacency[link["src"]].append((link["dst"], link))
         if bool(link.get("bidirectional", True)):
-            adjacency[link["dst"]].append((cost, link["src"], {**link, "src": link["dst"], "dst": link["src"]}))
+            adjacency[link["dst"]].append((link["src"], {**link, "src": link["dst"], "dst": link["src"]}))
 
-    distances: dict[str, float] = {origin_id: 0.0}
+    # Breadth-first search guarantees the displayed hop count is the shortest reachable path.
+    distances: dict[str, int] = {origin_id: 0}
     previous: dict[str, tuple[str | None, dict[str, Any] | None]] = {origin_id: (None, None)}
-    queue: list[tuple[float, str]] = [(0.0, origin_id)]
+    path_scores = {origin_id: 1.0}
+    queue = deque([origin_id])
 
     while queue:
-        cost, node_id = heapq.heappop(queue)
-        if cost > distances.get(node_id, float("inf")):
-            continue
-        for step_cost, nxt, link in adjacency.get(node_id, []):
-            new_cost = cost + step_cost
-            if new_cost < distances.get(nxt, float("inf")):
-                distances[nxt] = new_cost
+        node_id = queue.popleft()
+        for nxt, link in adjacency.get(node_id, []):
+            candidate_hop = distances[node_id] + 1
+            candidate_score = path_scores[node_id] * float(link.get("weight", 1.0)) * TRUST_FACTOR.get(link.get("trust", "medium"), 0.7)
+            if nxt not in distances:
+                distances[nxt] = candidate_hop
                 previous[nxt] = (node_id, link)
-                heapq.heappush(queue, (new_cost, nxt))
+                path_scores[nxt] = candidate_score
+                queue.append(nxt)
+            elif distances[nxt] == candidate_hop and candidate_score > path_scores[nxt]:
+                previous[nxt] = (node_id, link)
+                path_scores[nxt] = candidate_score
 
     reachable = {asset_id: dist for asset_id, dist in distances.items() if asset_id != origin_id}
     nodes: list[dict[str, Any]] = []

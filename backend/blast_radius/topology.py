@@ -7,12 +7,14 @@ from typing import Any
 
 DEFAULT_ASSETS = [
     {"id": "border-gateway", "name": "Border Gateway", "ip": "192.168.1.1", "zone": "Edge", "criticality": 5, "role": "gateway", "modeled": True, "status": "healthy"},
-    {"id": "dmz-server", "name": "DMZ Target Server", "ip": "10.0.0.15", "zone": "DMZ", "criticality": 5, "role": "target", "modeled": True, "status": "healthy"},
-    {"id": "core-cluster", "name": "Core Cluster Node", "ip": "10.0.0.80", "zone": "Internal", "criticality": 5, "role": "cluster", "modeled": True, "status": "healthy"},
-    {"id": "db-primary", "name": "Database", "ip": "10.0.0.25", "zone": "Internal", "criticality": 4, "role": "database", "modeled": True, "status": "healthy"},
-    {"id": "auth-server", "name": "Auth Server", "ip": "10.0.0.40", "zone": "Internal", "criticality": 4, "role": "auth", "modeled": True, "status": "healthy"},
-    {"id": "backup-store", "name": "Backup Store", "ip": "10.0.0.55", "zone": "Internal", "criticality": 3, "role": "backup", "modeled": True, "status": "healthy"},
+    {"id": "dmz-server", "name": "Web Server", "ip": "10.0.2.14", "zone": "DMZ", "criticality": 5, "role": "web server", "modeled": True, "status": "healthy"},
+    {"id": "core-cluster", "name": "Application Server", "ip": "10.0.0.80", "zone": "Internal", "criticality": 5, "role": "application server", "modeled": True, "status": "healthy"},
+    {"id": "db-primary", "name": "Database Server", "ip": "10.0.0.25", "zone": "Internal", "criticality": 5, "role": "database server", "modeled": True, "status": "healthy"},
+    {"id": "auth-server", "name": "Authentication Server", "ip": "10.0.0.40", "zone": "Internal", "criticality": 4, "role": "authentication server", "modeled": True, "status": "healthy"},
+    {"id": "backup-store", "name": "File Server", "ip": "10.0.0.55", "zone": "Internal", "criticality": 3, "role": "file server", "modeled": True, "status": "healthy"},
     {"id": "workstation-01", "name": "Employee Workstation", "ip": "10.0.0.70", "zone": "Internal", "criticality": 2, "role": "desktop", "modeled": True, "status": "healthy"},
+    {"id": "workstation-02", "name": "Finance Workstation", "ip": "10.0.0.71", "zone": "Internal", "criticality": 3, "role": "desktop", "modeled": True, "status": "healthy"},
+    {"id": "isolated-workstation", "name": "Isolated Test Workstation", "ip": "10.0.0.99", "zone": "Lab", "criticality": 1, "role": "desktop", "modeled": True, "status": "healthy"},
 ]
 
 DEFAULT_LINKS = [
@@ -24,7 +26,18 @@ DEFAULT_LINKS = [
     {"id": 6, "src": "auth-server", "dst": "workstation-01", "ports": [3389], "protocol": "tcp", "trust": "low", "weight": 1.0, "bidirectional": True, "active": True},
     {"id": 7, "src": "workstation-01", "dst": "dmz-server", "ports": [22, 8080], "protocol": "tcp", "trust": "medium", "weight": 0.9, "bidirectional": True, "active": True},
     {"id": 8, "src": "border-gateway", "dst": "workstation-01", "ports": [443], "protocol": "tcp", "trust": "low", "weight": 0.8, "bidirectional": True, "active": True},
+    {"id": 9, "src": "workstation-02", "dst": "auth-server", "ports": [443, 636], "protocol": "tcp", "trust": "medium", "weight": 1.0, "bidirectional": True, "active": True},
 ]
+
+LEGACY_DEFAULT_ASSETS = {
+    "border-gateway": ("Border Gateway", "192.168.1.1", "gateway", 5),
+    "dmz-server": ("DMZ Target Server", "10.0.0.15", "target", 5),
+    "core-cluster": ("Core Cluster Node", "10.0.0.80", "cluster", 5),
+    "db-primary": ("Database", "10.0.0.25", "database", 4),
+    "auth-server": ("Auth Server", "10.0.0.40", "auth", 4),
+    "backup-store": ("Backup Store", "10.0.0.55", "backup", 3),
+    "workstation-01": ("Employee Workstation", "10.0.0.70", "desktop", 2),
+}
 
 
 def ensure_blast_schema(connection: Any) -> None:
@@ -77,21 +90,39 @@ def ensure_blast_schema(connection: Any) -> None:
 
 def seed_demo_topology(connection: Any) -> int:
     ensure_blast_schema(connection)
-    assets_rows = connection.execute("SELECT COUNT(*) AS count FROM assets").fetchone()["count"]
-    if assets_rows:
-        return 0
+    inserted = 0
+    migrated = 0
     for asset in DEFAULT_ASSETS:
-        connection.execute(
-            "INSERT INTO assets (id, name, ip, zone, criticality, role, modeled, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        legacy = LEGACY_DEFAULT_ASSETS.get(asset["id"])
+        existing = connection.execute(
+            "SELECT name, ip, role, criticality FROM assets WHERE id = ?",
+            (asset["id"],),
+        ).fetchone()
+        if existing is not None and legacy == (
+            existing["name"],
+            existing["ip"],
+            existing["role"],
+            int(existing["criticality"]),
+        ):
+            connection.execute(
+                "UPDATE assets SET name = ?, ip = ?, zone = ?, criticality = ?, role = ?, modeled = ? WHERE id = ?",
+                (asset["name"], asset["ip"], asset["zone"], asset["criticality"], asset["role"], int(bool(asset["modeled"])), asset["id"]),
+            )
+            migrated += 1
+        result = connection.execute(
+            "INSERT INTO assets (id, name, ip, zone, criticality, role, modeled, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING",
             (asset["id"], asset["name"], asset["ip"], asset["zone"], asset["criticality"], asset["role"], int(bool(asset["modeled"])), asset["status"]),
         )
+        inserted += max(0, result.rowcount)
     for link in DEFAULT_LINKS:
-        connection.execute(
-            "INSERT INTO links (id, src, dst, ports, protocol, trust, weight, bidirectional, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        result = connection.execute(
+            "INSERT INTO links (id, src, dst, ports, protocol, trust, weight, bidirectional, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT (id) DO NOTHING",
             (link["id"], link["src"], link["dst"], json.dumps(link["ports"]), link["protocol"], link["trust"], link["weight"], int(bool(link["bidirectional"])), int(bool(link["active"]))),
         )
-    connection.commit()
-    return len(DEFAULT_ASSETS)
+        inserted += max(0, result.rowcount)
+    if inserted or migrated:
+        connection.commit()
+    return inserted
 
 
 def load_assets(connection: Any) -> list[dict[str, object]]:

@@ -82,3 +82,27 @@ def test_criticality_five_asset_risk_counts_as_crown_jewel():
     links = [{"id": 1, "src": "a", "dst": "b", "ports": [445], "protocol": "tcp", "trust": "high", "weight": 1.0, "bidirectional": True, "active": True}]
     result = compute_blast_radius("a", assets, links)
     assert result["summary"]["crown_jewels_exposed"] == 1
+
+
+def test_directed_links_follow_shortest_hop_paths():
+    assets = [
+        {"id": "source", "name": "Source", "ip": "10.0.0.1", "zone": "Lab", "criticality": 2, "role": "desktop"},
+        {"id": "relay", "name": "Relay", "ip": "10.0.0.2", "zone": "Lab", "criticality": 2, "role": "server"},
+        {"id": "target", "name": "Target", "ip": "10.0.0.3", "zone": "Lab", "criticality": 5, "role": "database"},
+        {"id": "isolated", "name": "Isolated", "ip": "10.0.0.4", "zone": "Lab", "criticality": 5, "role": "server"},
+    ]
+    links = [
+        {"id": 1, "src": "source", "dst": "relay", "ports": [443], "protocol": "tcp", "trust": "low", "weight": 0.2, "bidirectional": False, "active": True},
+        {"id": 2, "src": "relay", "dst": "target", "ports": [5432], "protocol": "tcp", "trust": "low", "weight": 0.2, "bidirectional": False, "active": True},
+        {"id": 3, "src": "source", "dst": "target", "ports": [443], "protocol": "tcp", "trust": "high", "weight": 2.0, "bidirectional": False, "active": True},
+        {"id": 4, "src": "isolated", "dst": "source", "ports": [22], "protocol": "tcp", "trust": "high", "weight": 1.0, "bidirectional": False, "active": True},
+        {"id": 5, "src": "missing", "dst": "target", "ports": [22], "protocol": "tcp", "trust": "high", "weight": 1.0, "bidirectional": False, "active": True},
+    ]
+
+    result = compute_blast_radius("source", assets, links)
+    nodes = {node["id"]: node for node in result["nodes"]}
+
+    assert nodes["target"]["hop"] == 1
+    assert nodes["target"]["path"] == ["source", "target"]
+    assert nodes["relay"]["hop"] == 1
+    assert "isolated" not in nodes
