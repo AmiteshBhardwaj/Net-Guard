@@ -19,11 +19,32 @@ class BlastService:
         self.db_factory = db_factory
         self.last_hit: dict[str, float] = {}
 
-    def _resolve_asset_by_ip(self, target_ip: str | None) -> dict[str, Any] | None:
+    def _resolve_asset_by_ip(self, target_ip: str | None, auto_create: bool = True) -> dict[str, Any] | None:
         if not target_ip:
             return None
         with self.db_factory() as conn:
             row = conn.execute("SELECT * FROM assets WHERE ip = ? LIMIT 1", (target_ip,)).fetchone()
+            if row is None and auto_create:
+                asset_id = f"host-{str(target_ip).replace('.', '-').replace(':', '-')}"
+                name = f"Host ({target_ip})"
+                s_ip = str(target_ip)
+                zone = "Internal" if (s_ip.startswith("10.") or s_ip.startswith("192.168.") or s_ip.startswith("172.") or s_ip.startswith("127.")) else "External"
+                role = "gateway" if s_ip.endswith(".1") else ("desktop" if zone == "Internal" else "remote")
+                criticality = 4 if role == "gateway" else 2
+                conn.execute(
+                    "INSERT INTO assets (id, name, ip, zone, criticality, role, modeled, status) VALUES (?, ?, ?, ?, ?, ?, 1, 'healthy') ON CONFLICT(id) DO NOTHING",
+                    (asset_id, name, s_ip, zone, criticality, role),
+                )
+                gw = conn.execute("SELECT id FROM assets WHERE role = 'gateway' LIMIT 1").fetchone()
+                if gw and gw["id"] != asset_id:
+                    link_id = abs(hash((gw["id"], asset_id))) % 1000000 + 500
+                    conn.execute(
+                        "INSERT INTO links (id, src, dst, ports, protocol, trust, weight, bidirectional, active) VALUES (?, ?, ?, ?, ?, ?, ?, 1, 1) ON CONFLICT(id) DO NOTHING",
+                        (link_id, gw["id"], asset_id, json.dumps([80, 443]), "tcp", "medium", 1.0),
+                    )
+                conn.commit()
+                row = conn.execute("SELECT * FROM assets WHERE id = ? LIMIT 1", (asset_id,)).fetchone()
+
             if row is None:
                 return None
             return {
@@ -47,7 +68,10 @@ class BlastService:
 
     async def on_anomaly(self, event: dict[str, Any]) -> dict[str, Any] | None:
         target_ip = event.get("dst") or event.get("target") or event.get("source_ip")
-        asset = self._resolve_asset_by_ip(str(target_ip) if target_ip else None)
+        src_ip = event.get("src") or event.get("source_ip")
+        if src_ip:
+            self._resolve_asset_by_ip(str(src_ip), auto_create=True)
+        asset = self._resolve_asset_by_ip(str(target_ip) if target_ip else None, auto_create=True)
         if asset is None:
             return None
         now = time.time()

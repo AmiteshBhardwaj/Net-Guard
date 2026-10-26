@@ -27,7 +27,7 @@ function getInitialOverviewStats() {
     engineStatus: document.getElementById('engine-kpi-confidence')?.textContent?.trim() || 'Rules active',
     engineCaption: document.getElementById('engine-kpi-caption')?.textContent?.trim() || 'Model is not available',
     modelLoaded: engineName.includes('Forest'),
-    sourceLabel: document.getElementById('overview-source')?.textContent?.trim() || 'Demo traffic',
+    sourceLabel: document.getElementById('overview-source')?.textContent?.trim() || 'Live capture',
   };
 }
 

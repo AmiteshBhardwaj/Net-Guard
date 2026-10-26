@@ -237,15 +237,22 @@ class DecisionEngine:
         }
 
 
-def private_target(value: str) -> str:
-    """Accept loopback or RFC1918 IPv4 addresses only."""
-    address = ipaddress.ip_address(value)
-    allowed = [
-        ipaddress.ip_network("10.0.0.0/8"), ipaddress.ip_network("172.16.0.0/12"),
-        ipaddress.ip_network("192.168.0.0/16"), ipaddress.ip_network("127.0.0.0/8"),
-    ]
-    if address.version != 4 or not any(address in network for network in allowed):
-        raise ValueError("Target must be an IPv4 private or loopback address")
+def validate_ip(value: str) -> str:
+    """Accept any valid IPv4 or IPv6 address."""
+    address = ipaddress.ip_address(str(value).strip())
+    return str(address)
+
+
+def private_target(value: str, strict_private: bool = False) -> str:
+    """Accept IPv4/IPv6 addresses. Enforces loopback or RFC1918 IPv4 only if strict_private=True."""
+    address = ipaddress.ip_address(str(value).strip())
+    if strict_private:
+        allowed = [
+            ipaddress.ip_network("10.0.0.0/8"), ipaddress.ip_network("172.16.0.0/12"),
+            ipaddress.ip_network("192.168.0.0/16"), ipaddress.ip_network("127.0.0.0/8"),
+        ]
+        if address.version != 4 or not any(address in network for network in allowed):
+            raise ValueError("Target must be an IPv4 private or loopback address")
     return str(address)
 
 

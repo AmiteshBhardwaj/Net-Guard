@@ -11,13 +11,120 @@ from typing import Callable
 from app.core import Flow, FlowTable, Packet, FIN, SYN, RST, ACK
 
 
+import io
+from pathlib import Path
+from typing import Any
+
+from app.core import Flow, FlowTable, Packet, FIN, SYN, RST, ACK, FEATURES
+
+
+def get_active_interfaces() -> list[dict[str, Any]]:
+    """Return available host interfaces with IP addresses and status."""
+    names: list[str] = []
+    default_iface: str | None = None
+    try:
+        from scapy.all import get_if_list, conf
+        names = list(get_if_list())
+        cand = getattr(conf, "iface", None)
+        if cand:
+            default_iface = getattr(cand, "name", str(cand))
+    except Exception:
+        names = ["lo", "eth0"]
+
+    import socket
+    results: list[dict[str, Any]] = []
+    for name in names:
+        ip = None
+        try:
+            import fcntl, struct
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            ip = socket.inet_ntoa(fcntl.ioctl(
+                s.fileno(),
+                0x8915,  # SIOCGIFADDR
+                struct.pack('256s', name[:15].encode('utf-8'))
+            )[20:24])
+        except Exception:
+            pass
+
+        is_up = True
+        operstate_path = Path(f"/sys/class/net/{name}/operstate")
+        if operstate_path.exists():
+            try:
+                is_up = operstate_path.read_text().strip().lower() in {"up", "unknown"}
+            except Exception:
+                pass
+
+        results.append({
+            "name": name,
+            "ip": ip,
+            "is_default": bool((default_iface and name == default_iface) or (not default_iface and ip and not ip.startswith("127."))),
+            "is_up": is_up,
+        })
+    return results
+
+
+def flows_from_csv(source: str | Path | bytes, limit: int = 5000) -> list[Flow]:
+    """Load benchmark dataset CSV flows into NetGuard Flow objects."""
+    import pandas as pd
+    if isinstance(source, bytes):
+        df = pd.read_csv(io.BytesIO(source), nrows=limit)
+    else:
+        df = pd.read_csv(source, nrows=limit)
+
+    flows: list[Flow] = []
+    now = time.time()
+    cum_time = 0.0
+
+    target_ips = {
+        "Normal": ("192.168.10.50", "192.168.10.5"),
+        "PortScan": ("192.168.10.150", "192.168.10.5"),
+        "DoS/DDoS": ("192.168.10.200", "192.168.10.5"),
+        "BruteForce": ("192.168.10.220", "192.168.10.5"),
+    }
+
+    for _, row in df.iterrows():
+        label = str(row.get("target", "Normal"))
+        src_ip, dst_ip = target_ips.get(label, ("192.168.10.100", "192.168.10.5"))
+        dport = int(row.get("destination_port", 80))
+        dur = float(row.get("duration_seconds", 0.05))
+        fwd_pkts = int(row.get("forward_packets", 1))
+        bwd_pkts = int(row.get("backward_packets", 0))
+        fwd_bytes = int(row.get("forward_bytes", 60))
+        bwd_bytes = int(row.get("backward_bytes", 0))
+        syn_cnt = int(row.get("syn_count", 0))
+        ack_cnt = int(row.get("ack_count", 0))
+        rst_cnt = int(row.get("rst_count", 0))
+
+        start_ts = now + cum_time
+        end_ts = start_ts + max(0.001, dur)
+        cum_time += min(max(dur, 0.01), 0.5)
+
+        flow = Flow(
+            src=src_ip,
+            dst=dst_ip,
+            dport=dport,
+            sport=random.randint(40000, 65000),
+            protocol="TCP",
+            started=start_ts,
+            ended=end_ts,
+            forward_packets=fwd_pkts,
+            backward_packets=bwd_pkts,
+            forward_bytes=fwd_bytes,
+            backward_bytes=bwd_bytes,
+            syn_count=syn_cnt,
+            ack_count=ack_cnt,
+            rst_count=rst_cnt,
+        )
+        flows.append(flow)
+    return flows
+
+
 def flows_from_pcap(payload: bytes) -> list[Flow]:
     try:
         from scapy.all import IP, TCP, UDP, Ether, PcapReader
     except ImportError as exc:
         raise RuntimeError("PCAP support requires Scapy. Install requirements.txt") from exc
 
-    import io
     packet_flows: dict[tuple, Flow] = {}
     flows: list[Flow] = []
     reader = PcapReader(io.BytesIO(payload))
@@ -40,7 +147,17 @@ def flows_from_pcap(payload: bytes) -> list[Flow]:
             if flow is None or stamp - flow.ended > 2:
                 if flow is not None:
                     flows.append(flow)
-                flow = Flow(src=str(ip.src), dst=str(ip.dst), dport=dst_port, sport=src_port, protocol=protocol, started=stamp, ended=stamp)
+                # Client initiator heuristics: SYN packet or client high port to low server port
+                is_init = True
+                if protocol == "TCP" and (int(transport.flags) & 0x02) and not (int(transport.flags) & 0x10):
+                    is_init = True
+                elif dst_port < src_port:
+                    is_init = True
+                elif src_port < dst_port:
+                    is_init = False
+                client_ip, srv_ip = (str(ip.src), str(ip.dst)) if is_init else (str(ip.dst), str(ip.src))
+                client_port, srv_port = (src_port, dst_port) if is_init else (dst_port, src_port)
+                flow = Flow(src=client_ip, dst=srv_ip, dport=srv_port, sport=client_port, protocol=protocol, started=stamp, ended=stamp)
                 packet_flows[canonical] = flow
             is_forward = (flow.src, flow.sport) == src_ep
             length = int(len(packet))
@@ -71,6 +188,7 @@ class CaptureSource:
         self._sweeper: threading.Thread | None = None
         self._stop_event: threading.Event | None = None
         self._flush_remaining: Callable[[], None] | None = None
+        self.interface: str | None = None
         self.running = False
 
     def start(self, interface: str | None, callback: Callable[[Flow], None]) -> None:
@@ -80,6 +198,16 @@ class CaptureSource:
             raise RuntimeError("Live capture requires Scapy and a supported capture driver (Npcap on Windows)") from exc
         if self.running:
             self.stop()
+
+        chosen_iface = interface
+        if not chosen_iface or chosen_iface == "auto":
+            candidates = [iface for iface in get_active_interfaces() if iface.get("is_up") and iface.get("ip") and not iface["ip"].startswith("127.")]
+            if candidates:
+                chosen_iface = candidates[0]["name"]
+            else:
+                chosen_iface = None
+
+        self.interface = chosen_iface
         active: dict[tuple, Flow] = {}
         lock = threading.Lock()
 
@@ -98,7 +226,17 @@ class CaptureSource:
                 if flow is None or stamp - flow.ended > 2:
                     if flow is not None:
                         completed.append(flow)
-                    flow = Flow(src=str(ip.src), dst=str(ip.dst), dport=int(transport.dport), sport=int(transport.sport), protocol=protocol, started=stamp, ended=stamp)
+                    # Determine client initiator
+                    is_init = True
+                    if protocol == "TCP" and (int(transport.flags) & 0x02) and not (int(transport.flags) & 0x10):
+                        is_init = True
+                    elif int(transport.dport) < int(transport.sport):
+                        is_init = True
+                    elif int(transport.sport) < int(transport.dport):
+                        is_init = False
+                    client_ip, srv_ip = (str(ip.src), str(ip.dst)) if is_init else (str(ip.dst), str(ip.src))
+                    client_port, srv_port = (int(transport.sport), int(transport.dport)) if is_init else (int(transport.dport), int(transport.sport))
+                    flow = Flow(src=client_ip, dst=srv_ip, dport=srv_port, sport=client_port, protocol=protocol, started=stamp, ended=stamp)
                     active[key] = flow
                 forward = (flow.src, flow.sport) == src_ep
                 length = int(len(packet))
@@ -138,12 +276,12 @@ class CaptureSource:
             for item in completed:
                 callback(item)
 
-        self._sniffer = AsyncSniffer(iface=interface or None, prn=receive, store=False, filter="ip and (tcp or udp)")
+        self._sniffer = AsyncSniffer(iface=chosen_iface, prn=receive, store=False, filter="ip and (tcp or udp)")
         try:
             self._sniffer.start()
         except Exception as exc:
             self._sniffer = None
-            raise RuntimeError(f"Could not start capture: {exc}") from exc
+            raise RuntimeError(f"Could not start capture on {chosen_iface or 'default'}: {exc}") from exc
         self.running = True
         self._stop_event = stop_event
         self._flush_remaining = flush_remaining

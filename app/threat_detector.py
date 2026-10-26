@@ -63,6 +63,17 @@ class IsolationThreatDetector:
 
         return np.array([packet_size, src_port, dst_port, protocol], dtype=float)
 
+    def flow_to_point(self, flow: Any) -> np.ndarray:
+        """Convert a live Flow into IsolationForest feature vector [packet_size, src_port, dst_port, protocol]."""
+        pkts = max(1, getattr(flow, "forward_packets", 1) + getattr(flow, "backward_packets", 0))
+        bytes_tot = getattr(flow, "forward_bytes", 60) + getattr(flow, "backward_bytes", 0)
+        avg_pkt_size = float(bytes_tot / pkts)
+        src_port = float(getattr(flow, "sport", 0) or 0)
+        dst_port = float(getattr(flow, "dport", 80) or 80)
+        proto_str = str(getattr(flow, "protocol", "TCP")).upper()
+        proto_code = 0 if proto_str == "TCP" else (1 if proto_str == "UDP" else 2)
+        return np.array([avg_pkt_size, src_port, dst_port, proto_code], dtype=float)
+
     def analyze_point(self, data_point: np.ndarray | list[float]) -> dict[str, Any]:
         """Runs IsolationForest anomaly detection and extracts explainability factors."""
         arr = np.asarray(data_point, dtype=float).reshape(1, -1)

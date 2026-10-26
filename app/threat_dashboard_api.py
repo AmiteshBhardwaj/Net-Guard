@@ -140,6 +140,22 @@ async def execute_step(force_anomaly: bool | None = None) -> dict[str, Any]:
     return analyzed
 
 
+async def ingest_flow_telemetry(flow: Any) -> dict[str, Any]:
+    sample = detector.flow_to_point(flow)
+    analyzed = detector.analyze_point(sample)
+    record_log(analyzed)
+    await broadcast_event({
+        "type": "threat_stream_point",
+        "data": analyzed,
+    })
+    if analyzed["is_anomaly"]:
+        await broadcast_event({
+            "type": "threat_stream_alert",
+            "alert": analyzed,
+        })
+    return analyzed
+
+
 async def _stream_worker() -> None:
     global _stream_active
     while _stream_active:

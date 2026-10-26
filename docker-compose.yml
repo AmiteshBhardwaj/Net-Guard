@@ -6,10 +6,14 @@ services:
     container_name: netguard-app
     ports:
       - "8000:8000"
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
     env_file:
       - .env
     environment:
       - NETGUARD_CAPTURE_MODE=local
+      - NETGUARD_DEFAULT_SOURCE=live
       - PORT=8000
     volumes:
       - ./app:/app/app

@@ -150,10 +150,11 @@
     if (!el || state.noticeDismissed) return;
     const copy = {
       demo: "<strong>Demo data</strong> Sample activity stays on this machine. No packets leave it.",
-      live: "<strong>Live capture</strong> Packets are read from the selected interface. Capture may require administrator access.",
-      pcap: "<strong>Capture file</strong> Recorded traffic is checked locally. This is not a live capture."
+      live: "<strong>Live capture</strong> Reading packets directly from local network interface.",
+      pcap: "<strong>Capture file</strong> Replaying recorded packets from uploaded capture file.",
+      csv: "<strong>Dataset benchmark</strong> Streaming real CICIDS2017 flow telemetry."
     };
-    el.innerHTML = `<span>${copy[source] || copy.demo}</span><button id="notice-dismiss" aria-label="Dismiss">×</button>`;
+    el.innerHTML = `<span>${copy[source] || copy.live}</span><button id="notice-dismiss" aria-label="Dismiss">×</button>`;
     $("#notice-dismiss").onclick = () => {
       state.noticeDismissed = true;
       el.remove();
@@ -188,13 +189,15 @@
     $("#engine-overview-model").textContent = trained ? "Random Forest + rules" : "Explainable rules";
     $("#model-health").textContent = trained ? "Trained model loaded" : "Rules only · model not trained";
     $("#activity-model").textContent = trained ? "Random Forest + rules" : "Rules active";
-    const sourceLabel = { live: "Live capture", pcap: "Capture file", demo: "Demo traffic" }[stats.source || "demo"];
+    const sourceLabel = { live: "Live capture", pcap: "Capture file", csv: "Dataset replay", demo: "Demo traffic" }[stats.source || "live"];
     $("#overview-source").textContent = sourceLabel;
     $("#overview-telemetry").textContent = stats.source === "live"
-      ? "Using packets read from the selected network interface."
+      ? `Using packets read from ${stats.interface || "active network interface"}.`
       : stats.source === "pcap"
         ? "Using traffic from the selected capture file."
-        : "Using sample traffic created locally for this session.";
+        : stats.source === "csv"
+          ? "Using benchmark dataset flows."
+          : "Using sample traffic created locally for this session.";
     const metricSnapshot = {
       flowsProcessed: Number(stats.flows_processed) || 0,
       packetsPerSecond: Number(stats.packets_per_second) || 0,
@@ -219,8 +222,8 @@
       $("#score-bar").style.transform = "scaleX(0)";
       $("#score-caption").textContent = "No simulated attacks launched";
     }
-    const source = stats.source || "demo";
-    $("#source-select").value = source === "live" ? "live" : source === "pcap" ? "pcap" : "demo";
+    const source = stats.source || "live";
+    $("#source-select").value = ["live", "pcap", "csv", "demo"].includes(source) ? source : "live";
     setNotice(source);
     $(".threat-kpi")?.classList.toggle("has-threats", Number(stats.alerts) > 0);
   }
@@ -1291,9 +1294,17 @@
     try {
       const data = await api("/api/interfaces");
       const select = $("#interface-select");
-      select.innerHTML = '<option value="">Default interface</option>' + data.interfaces.map(name => `<option>${escapeHtml(name)}</option>`).join("");
+      if (select && data.details && data.details.length) {
+        select.innerHTML = '<option value="">Auto (Default active)</option>' + data.details.map(item => {
+          const ipLabel = item.ip ? ` (${item.ip})` : "";
+          const defaultLabel = item.is_default ? " ★" : "";
+          return `<option value="${escapeHtml(item.name)}"${item.is_default ? " selected" : ""}>${escapeHtml(item.name)}${ipLabel}${defaultLabel}</option>`;
+        }).join("");
+      } else if (select && data.interfaces) {
+        select.innerHTML = '<option value="">Default interface</option>' + data.interfaces.map(name => `<option>${escapeHtml(name)}</option>`).join("");
+      }
     } catch (error) {
-      $("#capture-help").textContent = `Interfaces unavailable · ${error.message}`;
+      if ($("#capture-help")) $("#capture-help").textContent = `Interfaces unavailable · ${error.message}`;
     }
   }
 
@@ -1343,6 +1354,26 @@
       state.noticeDismissed = false;
       setNotice("pcap");
       toast(`PCAP replay complete · ${result.flows_replayed} flows`);
+      await refresh();
+    } catch (error) {
+      toast(error.message);
+    }
+  }
+
+  async function replayCsvDataset() {
+    const filename = $("#csv-benchmark-select")?.value || "Friday-PortScan-Part2.csv";
+    if (state.mock) {
+      toast(`Mock replay · ${filename}`);
+      return;
+    }
+    try {
+      toast(`Streaming ${filename}...`);
+      const result = await api(`/api/replay/csv?filename=${encodeURIComponent(filename)}&speed=5`, { method: "POST" });
+      $("#capture-toggle")?.classList.remove("active");
+      if ($("#capture-toggle")) $("#capture-toggle").textContent = "Start capture";
+      state.noticeDismissed = false;
+      setNotice("csv");
+      toast(`Dataset replay complete · ${result.flows_replayed} flows processed`);
       await refresh();
     } catch (error) {
       toast(error.message);
@@ -1471,6 +1502,7 @@
       if ($("#capture-toggle").classList.contains("active")) setSource("live");
     });
     $("#pcap-file").addEventListener("change", replayCapture);
+    $("#replay-csv-button")?.addEventListener("click", replayCsvDataset);
     $("#blast-scenario").addEventListener("change", event => {
       const origin = event.target.value;
       if (!origin) return;

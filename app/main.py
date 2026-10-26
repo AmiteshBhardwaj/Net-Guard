@@ -22,9 +22,9 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from app.config import AGENT_TOKEN, CAPTURE_MODE, CORS_ORIGINS, DB_PATH, METRICS_PATH, MODEL_PATH, ROOT, STATIC_DIR
-from app.core import DecisionEngine, Flow, env_whitelist, private_target
+from app.core import DecisionEngine, Flow, env_whitelist, private_target, validate_ip
 from app.database import connect_database
-from app.sources import CaptureSource, DemoSource, flows_from_pcap
+from app.sources import CaptureSource, DemoSource, flows_from_pcap, flows_from_csv, get_active_interfaces
 from backend.blast_radius.router import router as blast_router
 from backend.blast_radius.service import BlastService
 from backend.blast_radius.topology import ensure_blast_schema, seed_demo_topology
@@ -33,6 +33,7 @@ from app.threat_dashboard_api import (
     router as threat_dashboard_router,
     set_broadcaster,
     set_db_provider,
+    ingest_flow_telemetry,
 )
 
 logger = logging.getLogger("netguard")
@@ -142,8 +143,18 @@ async def lifespan(application: FastAPI):
         )
     if state["source"] == "demo":
         demo_source.start()
+    elif state["source"] == "live":
+        try:
+            capture.start(state.get("interface"), on_live_flow)
+            state["interface"] = capture.interface
+        except Exception as exc:
+            logger.warning("Could not auto-start live capture: %s", exc)
+            state["source"] = "demo"
+            demo_source.start()
     yield
     demo_source.stop()
+    if capture.running:
+        capture.stop()
     if task:
         task.cancel()
         try:
@@ -171,8 +182,13 @@ demo_source = DemoSource(lambda flow: on_live_flow(flow), get_blocked=lambda: st
 clients: set[WebSocket] = set()
 client_lock = asyncio.Lock()
 state_lock = threading.RLock()
+
+DEFAULT_SOURCE = os.getenv("NETGUARD_DEFAULT_SOURCE", "demo").strip().lower()
+if DEFAULT_SOURCE not in {"demo", "live"}:
+    DEFAULT_SOURCE = "demo"
+
 state: dict[str, Any] = {
-    "source": "demo",
+    "source": DEFAULT_SOURCE,
     "interface": None,
     "packet_seconds": {},
     "flows_processed": 0,
@@ -220,6 +236,10 @@ async def process_flow(flow: Flow) -> dict[str, Any] | None:
         blocked = flow.src in state["blocked"]
     if blocked:
         return None
+    try:
+        await ingest_flow_telemetry(flow)
+    except Exception:
+        pass
     alert = engine.decide(flow)
     if alert is None:
         await broadcast({"type": "flow", "ts": flow.ended, "src": flow.src, "label": "Normal"})
@@ -244,6 +264,12 @@ async def process_flow(flow: Flow) -> dict[str, Any] | None:
             active_id = state["active_attack_id"] if state["active_attack_label"] == alert["label"] else None
         if active_id:
             conn.execute("UPDATE attacks SET detected=1 WHERE id=?", (active_id,))
+    blast_service = getattr(app.state, "blast_service", None)
+    if blast_service:
+        try:
+            await blast_service.on_anomaly(alert)
+        except Exception:
+            pass
     await broadcast({"type": "alert", **alert})
     return alert
 
@@ -261,7 +287,7 @@ class AttackRequest(BaseModel):
 
 
 class SourceRequest(BaseModel):
-    source: str = Field(pattern="^(demo|live)$")
+    source: str = Field(pattern="^(demo|live|pcap|csv)$")
     interface: str | None = None
 
 
@@ -379,9 +405,10 @@ async def set_source(request: SourceRequest) -> dict[str, Any]:
         demo_source.stop()
     with state_lock:
         state["source"] = request.source
-        state["interface"] = request.interface if request.source == "live" else None
-    await broadcast({"type": "source", "source": request.source, "interface": request.interface})
-    return {"source": request.source, "interface": request.interface}
+        state["interface"] = (capture.interface or request.interface) if request.source == "live" else None
+        active_iface = state["interface"]
+    await broadcast({"type": "source", "source": request.source, "interface": active_iface})
+    return {"source": request.source, "interface": active_iface}
 
 
 @app.post("/api/agent/flows")
@@ -439,6 +466,41 @@ async def replay_pcap(request: Request, filename: str = "capture.pcap", speed: f
         last = flow.started
     await broadcast({"type": "replay_complete", "flows": len(flows), "source": "pcap"})
     return {"source": "pcap", "flows_replayed": len(flows), "speed": rate}
+
+
+@app.post("/api/replay/csv")
+async def replay_csv(
+    request: Request,
+    filename: str = "Friday-PortScan-Part2.csv",
+    speed: float = 2.0,
+    limit: int = 1000,
+) -> dict[str, Any]:
+    content_len = int(request.headers.get("content-length", "0") or 0)
+    data_dir = ROOT / "data" / "cicids"
+    if content_len > 0:
+        body = await request.body()
+        flows = await asyncio.to_thread(flows_from_csv, body, min(limit, 5000))
+    else:
+        clean_name = Path(filename).name
+        csv_file = data_dir / clean_name
+        if not csv_file.exists():
+            raise HTTPException(404, f"Dataset file {clean_name} not found in data/cicids")
+        flows = await asyncio.to_thread(flows_from_csv, csv_file, min(limit, 5000))
+    if capture.running:
+        capture.stop()
+    demo_source.stop()
+    with state_lock:
+        state["source"] = "csv"
+        state["interface"] = None
+    rate = min(max(speed, 0.1), 50.0)
+    last = None
+    for flow in flows:
+        if last is not None:
+            await asyncio.sleep(min(max((flow.started - last) / rate, 0), 0.1))
+        await process_flow(flow)
+        last = flow.started
+    await broadcast({"type": "replay_complete", "flows": len(flows), "source": "csv", "file": filename})
+    return {"source": "csv", "flows_replayed": len(flows), "file": filename, "speed": rate}
 
 
 @app.post("/api/launch/{attack}")
@@ -511,7 +573,7 @@ async def launch_attack(attack: str, request: AttackRequest) -> dict[str, Any]:
 @app.post("/api/block/{ip}")
 async def block_ip(ip: str) -> dict[str, Any]:
     try:
-        safe_ip = private_target(ip)
+        safe_ip = validate_ip(ip)
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
     with state_lock:
@@ -522,6 +584,12 @@ async def block_ip(ip: str) -> dict[str, Any]:
             (safe_ip, time.time()),
         )
         conn.execute("UPDATE alerts SET blocked=1 WHERE src=?", (safe_ip,))
+    blast_service = getattr(app.state, "blast_service", None)
+    if blast_service:
+        try:
+            await blast_service.on_auto_block({"ip": safe_ip})
+        except Exception:
+            pass
     await broadcast({"type": "blocked", "ip": safe_ip, "simulated": True})
     return {"ip": safe_ip, "blocked": True, "simulated": True}
 
@@ -541,7 +609,7 @@ async def set_whitelist(request: WhitelistRequest) -> dict[str, Any]:
     parsed: set[str] = set()
     for ip in request.ips:
         try:
-            parsed.add(private_target(ip))
+            parsed.add(validate_ip(ip))
         except ValueError as exc:
             raise HTTPException(400, f"Invalid trusted IP {ip}: {exc}") from exc
     engine.whitelist = parsed
@@ -594,8 +662,9 @@ async def websocket_feed(socket: WebSocket) -> None:
 @app.get("/api/interfaces")
 async def interfaces() -> dict[str, Any]:
     try:
-        from scapy.all import get_if_list
-        names = get_if_list()
+        items = get_active_interfaces()
+        names = [i["name"] for i in items]
     except Exception:
+        items = []
         names = []
-    return {"interfaces": names, "available": bool(names)}
+    return {"interfaces": names, "details": items, "available": bool(names)}
