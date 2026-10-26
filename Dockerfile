@@ -33,4 +33,4 @@ RUN mkdir -p /app/data /app/models
 EXPOSE 10000
 
 # Start uvicorn with runtime dynamic $PORT expansion (Render standard)
-CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-10000}
+CMD exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-10000}

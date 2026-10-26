@@ -126,7 +126,8 @@ async def lifespan(application: FastAPI):
             logger.warning("Database initialization deferred/failed: %s", exc)
 
     loop = asyncio.get_running_loop()
-    await loop.run_in_executor(None, _startup_db)
+    # Fire-and-forget: don't block port bind on slow remote DB init
+    loop.run_in_executor(None, _startup_db)
 
     if engine.model is not None:
         state["model_status"] = "trained model loaded"
