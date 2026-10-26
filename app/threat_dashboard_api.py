@@ -127,7 +127,8 @@ def record_log(result: dict[str, Any]) -> None:
 async def execute_step(force_anomaly: bool | None = None) -> dict[str, Any]:
     sample = detector.simulate_data_point(force_anomaly=force_anomaly)
     analyzed = detector.analyze_point(sample)
-    record_log(analyzed)
+    loop = asyncio.get_running_loop()
+    loop.run_in_executor(None, record_log, analyzed)
     await broadcast_event({
         "type": "threat_stream_point",
         "data": analyzed,
@@ -143,7 +144,8 @@ async def execute_step(force_anomaly: bool | None = None) -> dict[str, Any]:
 async def ingest_flow_telemetry(flow: Any) -> dict[str, Any]:
     sample = detector.flow_to_point(flow)
     analyzed = detector.analyze_point(sample)
-    record_log(analyzed)
+    loop = asyncio.get_running_loop()
+    loop.run_in_executor(None, record_log, analyzed)
     await broadcast_event({
         "type": "threat_stream_point",
         "data": analyzed,

@@ -11,7 +11,6 @@ import time
 import uuid
 from typing import Any
 import numpy as np
-from sklearn.ensemble import IsolationForest
 
 PROTOCOL_MAP = {
     0: "TCP",
@@ -24,6 +23,8 @@ class IsolationThreatDetector:
     """Statistical and IsolationForest threat detection engine."""
 
     def __init__(self, contamination: float = 0.01, random_state: int = 42, training_samples: int = 1000):
+        from sklearn.ensemble import IsolationForest
+
         self.contamination = contamination
         self.random_state = random_state
         self.training_samples = training_samples

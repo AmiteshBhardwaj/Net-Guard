@@ -32,5 +32,5 @@ RUN mkdir -p /app/data /app/models
 # Expose default port
 EXPOSE 10000
 
-# Gunicorn master binds port instantly (fixes Render port scan), then spawns uvicorn worker
-CMD exec gunicorn app.main:app -w 1 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT:-10000} --timeout 120
+# Start uvicorn as PID 1 with runtime dynamic $PORT expansion (required by Render)
+CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-10000}"]

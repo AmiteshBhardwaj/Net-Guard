@@ -125,12 +125,20 @@ async def lifespan(application: FastAPI):
         except Exception as exc:
             logger.warning("Database initialization deferred/failed: %s", exc)
 
-    loop = asyncio.get_running_loop()
-    # Fire-and-forget: don't block port bind on slow remote DB init
-    loop.run_in_executor(None, _startup_db)
+    def _startup_ml_model() -> None:
+        try:
+            model = load_model()
+            if model is not None:
+                engine.model = model
+                with state_lock:
+                    state["model_status"] = "trained model loaded"
+        except Exception as exc:
+            logger.warning("Could not load ML model: %s", exc)
 
-    if engine.model is not None:
-        state["model_status"] = "trained model loaded"
+    loop = asyncio.get_running_loop()
+    # Fire-and-forget: don't block port bind on slow remote DB init or model loading
+    loop.run_in_executor(None, _startup_db)
+    loop.run_in_executor(None, _startup_ml_model)
 
     keep_alive_url = (
         os.getenv("NETGUARD_KEEP_ALIVE_URL")
@@ -142,17 +150,29 @@ async def lifespan(application: FastAPI):
         task = asyncio.create_task(
             _keep_alive_task(keep_alive_url, interval_seconds=300)
         )
-    if state["source"] == "demo":
-        demo_source.start()
-    elif state["source"] == "live":
-        try:
-            capture.start(state.get("interface"), on_live_flow)
-            state["interface"] = capture.interface
-        except Exception as exc:
-            logger.warning("Could not auto-start live capture: %s", exc)
-            state["source"] = "demo"
+
+    # Deferred start for live/demo sources to ensure port binding & health check succeed first
+    async def _start_traffic_source() -> None:
+        await asyncio.sleep(2.0)
+        if state["source"] == "demo":
             demo_source.start()
+        elif state["source"] == "live":
+            try:
+                capture.start(state.get("interface"), on_live_flow)
+                state["interface"] = capture.interface
+            except Exception as exc:
+                logger.warning("Could not auto-start live capture: %s", exc)
+                state["source"] = "demo"
+                demo_source.start()
+
+    task_source = None
+    if state["source"] in {"demo", "live"}:
+        task_source = asyncio.create_task(_start_traffic_source())
+
     yield
+
+    if task_source:
+        task_source.cancel()
     demo_source.stop()
     if capture.running:
         capture.stop()
@@ -167,7 +187,7 @@ async def lifespan(application: FastAPI):
     close_connection_pool()
 
 
-engine = DecisionEngine(load_model(), whitelist=env_whitelist())
+engine = DecisionEngine(None, whitelist=env_whitelist())
 app = FastAPI(title="NetGuard", version="1.0.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
@@ -184,9 +204,12 @@ clients: set[WebSocket] = set()
 client_lock = asyncio.Lock()
 state_lock = threading.RLock()
 
-DEFAULT_SOURCE = os.getenv("NETGUARD_DEFAULT_SOURCE", "demo").strip().lower()
-if DEFAULT_SOURCE not in {"demo", "live"}:
-    DEFAULT_SOURCE = "demo"
+DEFAULT_SOURCE = os.getenv(
+    "NETGUARD_DEFAULT_SOURCE",
+    "agent" if CAPTURE_MODE == "agent" else "demo"
+).strip().lower()
+if DEFAULT_SOURCE not in {"demo", "live", "agent"}:
+    DEFAULT_SOURCE = "agent" if CAPTURE_MODE == "agent" else "demo"
 
 state: dict[str, Any] = {
     "source": DEFAULT_SOURCE,
@@ -245,26 +268,35 @@ async def process_flow(flow: Flow) -> dict[str, Any] | None:
     if alert is None:
         await broadcast({"type": "flow", "ts": flow.ended, "src": flow.src, "label": "Normal"})
         return None
-    with db() as conn:
-        conn.execute(
-            """
-            INSERT INTO alerts (id, ts, src, dst, dport, label, prob, severity, reasons, blocked, protocol)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(id) DO UPDATE SET
-                ts=excluded.ts, src=excluded.src, dst=excluded.dst, dport=excluded.dport,
-                label=excluded.label, prob=excluded.prob, severity=excluded.severity,
-                reasons=excluded.reasons, blocked=excluded.blocked, protocol=excluded.protocol
-            """,
-            (
-                alert["id"], alert["ts"], alert["src"], alert["dst"], alert["dport"],
-                alert["label"], alert["prob"], alert["severity"], json.dumps(alert["reasons"]),
-                int(alert["blocked"]), alert.get("protocol", "TCP"),
-            ),
-        )
-        with state_lock:
-            active_id = state["active_attack_id"] if state["active_attack_label"] == alert["label"] else None
-        if active_id:
-            conn.execute("UPDATE attacks SET detected=1 WHERE id=?", (active_id,))
+
+    def _persist_alert() -> None:
+        try:
+            with db() as conn:
+                conn.execute(
+                    """
+                    INSERT INTO alerts (id, ts, src, dst, dport, label, prob, severity, reasons, blocked, protocol)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(id) DO UPDATE SET
+                        ts=excluded.ts, src=excluded.src, dst=excluded.dst, dport=excluded.dport,
+                        label=excluded.label, prob=excluded.prob, severity=excluded.severity,
+                        reasons=excluded.reasons, blocked=excluded.blocked, protocol=excluded.protocol
+                    """,
+                    (
+                        alert["id"], alert["ts"], alert["src"], alert["dst"], alert["dport"],
+                        alert["label"], alert["prob"], alert["severity"], json.dumps(alert["reasons"]),
+                        int(alert["blocked"]), alert.get("protocol", "TCP"),
+                    ),
+                )
+                with state_lock:
+                    active_id = state["active_attack_id"] if state["active_attack_label"] == alert["label"] else None
+                if active_id:
+                    conn.execute("UPDATE attacks SET detected=1 WHERE id=?", (active_id,))
+        except Exception as exc:
+            logger.warning("Failed to persist alert: %s", exc)
+
+    loop = asyncio.get_running_loop()
+    await loop.run_in_executor(None, _persist_alert)
+
     blast_service = getattr(app.state, "blast_service", None)
     if blast_service:
         try:
@@ -288,7 +320,7 @@ class AttackRequest(BaseModel):
 
 
 class SourceRequest(BaseModel):
-    source: str = Field(pattern="^(demo|live|pcap|csv)$")
+    source: str = Field(pattern="^(demo|live|pcap|csv|agent)$")
     interface: str | None = None
 
 

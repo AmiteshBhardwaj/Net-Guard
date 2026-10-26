@@ -69,16 +69,17 @@ class BlastService:
     async def on_anomaly(self, event: dict[str, Any]) -> dict[str, Any] | None:
         target_ip = event.get("dst") or event.get("target") or event.get("source_ip")
         src_ip = event.get("src") or event.get("source_ip")
-        if src_ip:
-            self._resolve_asset_by_ip(str(src_ip), auto_create=True)
-        asset = self._resolve_asset_by_ip(str(target_ip) if target_ip else None, auto_create=True)
-        if asset is None:
-            return None
-        now = time.time()
-        if self.last_hit.get(asset["id"]) and (now - self.last_hit[asset["id"]]) < 2:
-            return None
-        self.last_hit[asset["id"]] = now
-        try:
+
+        def _compute() -> tuple[dict[str, Any] | None, dict[str, Any] | None, str | None, float]:
+            if src_ip:
+                self._resolve_asset_by_ip(str(src_ip), auto_create=True)
+            asset = self._resolve_asset_by_ip(str(target_ip) if target_ip else None, auto_create=True)
+            if asset is None:
+                return None, None, None, 0.0
+            now = time.time()
+            if self.last_hit.get(asset["id"]) and (now - self.last_hit[asset["id"]]) < 2:
+                return asset, None, None, now
+            self.last_hit[asset["id"]] = now
             with self.db_factory() as conn:
                 conn.execute("UPDATE assets SET status = 'targeted' WHERE id = ?", (asset["id"],))
                 assets = load_assets(conn)
@@ -97,6 +98,13 @@ class BlastService:
                         json.dumps(result),
                     ),
                 )
+            return asset, result, incident_id, now
+
+        try:
+            loop = asyncio.get_running_loop()
+            asset, result, incident_id, now = await loop.run_in_executor(None, _compute)
+            if not asset or not result or not incident_id:
+                return None
             payload = {
                 "type": "blast.computed",
                 "incident_id": incident_id,
