@@ -6,13 +6,13 @@
   <meta name="theme-color" content="#0b0b0d">
   <title>NetGuard — Network Threat Monitor</title>
   <link rel="stylesheet" href="/static/dashboard-workspace.css?v=12">
-  <link rel="stylesheet" href="/static/landing-assets/landing.css?v=16">
+  <link rel="stylesheet" href="/static/landing-assets/landing.css?v=18">
 </head>
 <body data-dashboard="overview">
   <div class="app-shell">
     <main class="main-content" id="overview">
       <header class="topbar">
-        <a class="brand dashboard-brand" href="/" aria-label="NetGuard home" title="Back to NetGuard home"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span class="dashboard-brand__copy"><span>netguard<span class="brand-period">.</span></span><small>NETWORK MONITOR</small></span></a>
+        <a class="brand dashboard-brand" href="/" aria-label="NetGuard home" title="Back to NetGuard home"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span class="dashboard-brand__copy"><span class="text-shimmer">netguard<span class="brand-period">.</span></span><small>NETWORK MONITOR</small></span></a>
         <div class="dashboard-nav-host" id="dashboard-nav-root"></div>
         <span class="visually-hidden" id="breadcrumb-page">Overview</span>
       </header>
@@ -41,7 +41,7 @@
             </div>
             <div class="overview-lower-grid">
               <section class="panel protocol-panel"><div class="panel-heading"><div><div class="panel-title">Traffic source</div><div class="panel-subtitle">Where activity comes from</div></div><span class="small-badge" id="overview-source">Demo</span></div><div class="provenance-note" id="overview-telemetry">Traffic and packet rates come from the selected source.</div></section>
-              <section class="panel overview-engine"><div class="panel-heading"><div><div class="panel-title">Detection status</div><div class="panel-subtitle">Current checks</div></div><span class="engine-live"><i></i> Active</span></div><div class="engine-overview-value" id="overview-engine-status">Rules are active</div><a class="panel-link" href="#isolation-forest" data-dashboard-link="isolation-forest">View detection details <span>↗</span></a></section>
+              <section class="panel overview-engine"><div class="panel-heading"><div><div class="panel-title">Detection status</div><div class="panel-subtitle">Current checks</div></div><span class="engine-live"><i></i> Active</span></div><div class="engine-overview-value" id="overview-engine-status">Rules are active</div><div class="detection-dial" id="detection-dial-root"></div><a class="panel-link" href="#isolation-forest" data-dashboard-link="isolation-forest">View detection details <span>↗</span></a></section>
             </div>
           </section>
 
@@ -221,7 +221,7 @@
   <div class="toast" id="toast" role="status"></div>
   <div id="dashboard-specular-root" hidden></div>
   <script src="/static/netguard-runtime-config.js"></script>
-  <script src="/static/dashboard.js?v=13"></script>
-  <script type="module" src="/static/landing-assets/landing.js?v=23"></script>
+  <script src="/static/dashboard.js?v=15"></script>
+  <script type="module" src="/static/landing-assets/landing.js?v=25"></script>
 </body>
 </html>

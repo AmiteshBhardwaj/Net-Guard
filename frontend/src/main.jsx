@@ -6,6 +6,8 @@ import LandingContentMotion from './components/LandingContentMotion.jsx';
 import DashboardTopNav from './components/DashboardTopNav.jsx';
 import DashboardSpecularEffects from './components/DashboardSpecularEffects.jsx';
 import DashboardOverviewKpis from './components/DashboardOverviewKpis.jsx';
+import setupDashboardEnhancements from './components/DashboardEnhancements.jsx';
+import './components/TextShimmer.css';
 
 function mount(element, component) {
   if (element) createRoot(element).render(component);
@@ -55,3 +57,5 @@ mount(
   document.querySelector('#dashboard-specular-root'),
   React.createElement(DashboardSpecularEffects),
 );
+
+setupDashboardEnhancements();

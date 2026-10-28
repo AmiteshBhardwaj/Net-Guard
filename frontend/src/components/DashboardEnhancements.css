@@ -1,0 +1,17 @@
+.attack-buttons > .warm-tooltip__trigger { display: flex; min-width: 0; }
+.attack-buttons .node-host { display: flex; width: 100%; }
+.attack-buttons .node-host > .attack-button { width: 100%; }
+.block-hold { display: inline-flex; }
+.dashboard-brand__copy > .text-shimmer {
+  --ts-base: #f2f0ee;
+  --ts-shine: #ff795c;
+  --ts-duration: 3.2s;
+}
+
+.speed-control { max-width: none; flex-wrap: wrap; justify-content: flex-start; gap: 18px; }
+.pace-radio { display: inline-flex; margin: -6px -10px; }
+
+.detection-dial__body { display: flex; align-items: center; gap: 22px; margin: 14px 0 6px; }
+.detection-dial__body .comet-dial[data-disabled] { opacity: 1; }
+.detection-dial__caption { display: grid; gap: 4px; margin: 0; color: var(--ink-soft); font-size: 11px; line-height: 1.5; }
+.detection-dial__caption strong { color: var(--ink); font-size: 12px; font-weight: 600; }

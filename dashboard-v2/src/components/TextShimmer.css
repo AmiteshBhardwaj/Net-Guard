@@ -1,0 +1,33 @@
+.text-shimmer {
+  --ts-base: #5eead4;
+  --ts-shine: #ffffff;
+  --ts-duration: 2.5s;
+
+  display: inline-block;
+  color: var(--ts-base);
+  background-image: linear-gradient(
+    110deg,
+    var(--ts-base) 35%,
+    var(--ts-shine) 50%,
+    var(--ts-base) 65%
+  );
+  background-size: 250% 100%;
+  background-position: 100% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: ts-sweep var(--ts-duration) linear infinite;
+}
+
+@keyframes ts-sweep {
+  from { background-position: 100% 0; }
+  to   { background-position: -100% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .text-shimmer {
+    animation: none;
+    background-image: none;
+    -webkit-text-fill-color: currentColor;
+  }
+}
