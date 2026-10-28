@@ -207,7 +207,10 @@
       engineStatus: trained ? "Model loaded" : "Rules active",
       engineCaption: trained ? "Model and explainable rules" : "Model is not available",
       modelLoaded: trained,
-      sourceLabel
+      sourceLabel,
+      attacksLaunched: Number(stats.attacks_launched) || 0,
+      attacksDetected: Number(stats.attacks_detected) || 0,
+      detectionRate: stats.attacks_launched ? Math.round((stats.attacks_detected / stats.attacks_launched) * 100) : 0
     };
     window.__dashboardMetricSnapshot = metricSnapshot;
     window.dispatchEvent(new CustomEvent("dashboardstats", { detail: metricSnapshot }));
@@ -606,6 +609,11 @@
 
   function renderAlerts() {
     const list = $("#alert-list");
+    if (list.querySelector(".hold-button[data-phase='holding']")) {
+      clearTimeout(state.alertRetry);
+      state.alertRetry = setTimeout(renderAlerts, 400);
+      return;
+    }
     $("#notification-count").textContent = state.alerts.length;
     const sideAlertCount = $("#side-alert-count");
     if (sideAlertCount) sideAlertCount.textContent = state.alerts.length;
@@ -626,7 +634,7 @@
           <div class="alert-first"><span class="severity ${severity}">${escapeHtml(severity)}</span><span class="alert-kind">${escapeHtml(alert.label)}</span></div>
           <div class="alert-reason">${escapeHtml((alert.reasons || []).join(" · "))}</div>
           <div class="alert-meta">${escapeHtml(alert.src)} → ${escapeHtml(alert.dst)}:${escapeHtml(alert.dport)} · ${Math.round((alert.prob || 0) * 100)}% confidence</div>
-          <div class="alert-right"><span class="alert-time">${fmtAgo(alert.ts)}</span>${blocked ? '<span class="blocked-tag"><span class="shield-icon">⬡</span> Blocked locally</span>' : `<button class="block-button" data-ip="${escapeHtml(alert.src)}">Block</button>`}</div>
+          <div class="alert-right"><span class="alert-time">${fmtAgo(alert.ts)}</span>${blocked ? '<span class="blocked-tag"><span class="shield-icon">⬡</span> Blocked locally</span>' : `<span class="block-hold" data-ip="${escapeHtml(alert.src)}"><button class="block-button" data-ip="${escapeHtml(alert.src)}">Block</button></span>`}</div>
         </div></div>`;
     }).join("");
     list.querySelectorAll(".block-button").forEach(button => {
@@ -1227,8 +1235,8 @@
     }, 4400);
   }
 
-  async function blockIP(ip) {
-    const confirmed = window.confirm(
+  async function blockIP(ip, { skipConfirm = false } = {}) {
+    const confirmed = skipConfirm || window.confirm(
       `Add ${ip} to NetGuard's local application blocklist? This does not change host firewall rules.`
     );
     if (!confirmed) return;
@@ -1473,6 +1481,7 @@
       card.addEventListener("pointerleave", () => delete card.dataset.spotlight);
     });
     $("#source-select").addEventListener("change", event => setSource(event.target.value));
+    window.addEventListener("netguard:block", event => blockIP(event.detail.ip, { skipConfirm: true }));
     $$("[data-attack]").forEach(button => button.addEventListener("click", () => launch(button.dataset.attack, button)));
     $("#inject-button").addEventListener("click", () => launch("portscan", $("#inject-button")));
     $$("[data-dashboard-target]").forEach(card => card.addEventListener("click", () => setDashboard(card.dataset.dashboardTarget)));
